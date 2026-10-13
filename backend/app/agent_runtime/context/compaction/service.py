@@ -26,8 +26,10 @@ from app.agent_runtime.persistence.compaction_types import (
     PersistedCompaction,
 )
 from app.agent_runtime.persistence.errors import PersistenceWriteError
+from app.agent_runtime.runner.event_scope import COMPACTION_EVENT_TAG
 from app.models.clients.model_factory import ModelConfig, create_chat_model
 from app.models.clients.model_params import normalize_reasoning_effort
+from app.models.services.openai_codex_service import OPENAI_CODEX_PROVIDER_TYPE
 from app.models.repos import model_provider_repo, model_repo
 from app.models.services.model_provider_service import ModelProviderService
 from app.core.encryption import EncryptionService
@@ -176,8 +178,16 @@ async def compact_window(
             effective_model_config = {
                 "provider_type": provider.provider_type,
                 "base_url": provider.url,
-                "api_key": encryption.decrypt(provider.api_key_encrypted),
+                "api_key": (
+                    ""
+                    if provider.provider_type == OPENAI_CODEX_PROVIDER_TYPE
+                    else encryption.decrypt(provider.api_key_encrypted)
+                ),
                 "model_id": record.model_id,
+                "input_price": record.input_price,
+                "output_price": record.output_price,
+                "cache_read_price": record.cache_read_price,
+                "cache_write_price": record.cache_write_price,
                 **({"custom_headers": headers} if headers else {}),
                 "temperature": record.temperature,
                 "top_p": record.top_p,
@@ -189,6 +199,8 @@ async def compact_window(
                 "presence_penalty": record.presence_penalty,
                 "repetition_penalty": record.repetition_penalty,
             }
+            if provider.provider_type == OPENAI_CODEX_PROVIDER_TYPE:
+                effective_model_config["provider_id"] = provider.id
             if model_reference in {DEFAULT_MODEL_REFERENCE, LIGHT_MODEL_REFERENCE}:
                 effort_setting = await setting_repo.get_by_key(
                     db_session,
@@ -205,7 +217,9 @@ async def compact_window(
         client_model_config = to_client_model_config(effective_model_config)
         client_model_config["session_id"] = state["session_id"]
         model = create_chat_model(ModelConfig(**client_model_config))
-        response = await model.ainvoke(messages)
+        response = await model.ainvoke(
+            messages, config={"tags": [COMPACTION_EVENT_TAG]}
+        )
     except Exception as exc:
         logger.opt(exception=True).error("Compaction LLM request failed")
         error = CompactionError("llm_error", "压缩失败，当前请求已中止")
@@ -301,6 +315,7 @@ async def compact_window(
         usage_sink,
         _usage_payload(
             usage=usage,
+            model_config=effective_model_config,
             session_id=session_id,
             task_id=task_id,
             trigger=trigger,
@@ -461,6 +476,7 @@ def _token_counts(usage: dict[str, Any] | None) -> tuple[int, int, int]:
 def _usage_payload(
     *,
     usage: dict[str, Any] | None,
+    model_config: Mapping[str, Any],
     session_id: str,
     task_id: str,
     trigger: CompactionTrigger,
@@ -474,6 +490,18 @@ def _usage_payload(
     usage_dict.setdefault("cache_read_tokens", token_cache)
     return {
         "usage_kind": "compaction",
+        "billing_config": {
+            "provider_type": str(model_config.get("provider_type") or ""),
+            **{
+                key: float(model_config.get(key) or 0)
+                for key in (
+                    "input_price",
+                    "output_price",
+                    "cache_read_price",
+                    "cache_write_price",
+                )
+            },
+        },
         "session_id": session_id,
         "task_id": task_id,
         "trigger": trigger,

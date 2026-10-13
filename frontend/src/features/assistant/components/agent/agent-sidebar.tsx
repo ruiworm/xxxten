@@ -31,7 +31,7 @@ interface AgentSidebarProps {
   onRestoreAttachments?: (attachments: AgentAttachment[]) => void;
   onSetInputValue?: (value: string) => void;
   onOpenMentionChapter?: (chapterId: string, chapterTitle: string) => void;
-  onOpenChanges?: (summary: AgentChangeSummary) => void;
+  onOpenChanges?: (summary: AgentChangeSummary, revisionId?: string) => void;
   onTokenUsage?: (sessionId: string, usage: TokenUsageState) => void;
   onTaskUsageSnapshot?: (payload: {
     sessionId: string;
@@ -54,6 +54,8 @@ interface AgentSidebarProps {
   onSessionCreated?: (response: AgentSessionCreateResponse) => void;
   projectedSpecialPanels?: AgentSpecialPanel[];
   onAtBottomChange?: (isAtBottom: boolean) => void;
+  onLoadingChange?: (isLoading: boolean) => void;
+  historyStatusHost?: HTMLElement | null;
   scrollToBottomFnRef?: React.MutableRefObject<(() => void) | null>;
 }
 
@@ -79,6 +81,8 @@ export function useAgentSidebar({
   onSessionCreated,
   projectedSpecialPanels = [],
   onAtBottomChange,
+  onLoadingChange,
+  historyStatusHost,
   scrollToBottomFnRef,
 }: AgentSidebarProps) {
   const {
@@ -87,6 +91,11 @@ export function useAgentSidebar({
     pendingMessage,
     status: agentStatus,
     isRunning: isAgentRunning,
+    canContinue,
+    isContinuing,
+    isStopping,
+    continueSession,
+    refreshCanContinue,
     isCompacting: isAgentCompacting,
     isRollbacking: isAgentRollbacking,
     isAttachmentProcessing: isAgentAttachmentProcessing,
@@ -107,6 +116,16 @@ export function useAgentSidebar({
     handleBatchDecision,
     abortSession: abortAgentSession,
     refreshChanges: refreshAgentChanges,
+    changeDetails: agentChangeDetails,
+    changeDetailsRevisionId: agentChangeDetailsRevisionId,
+    loadChangeDetails: loadAgentChangeDetails,
+    loadEarlier,
+    isLoadingEarlier,
+    messagesHasMore,
+    hasEarlierError,
+    generation,
+    sessionLoadVersion,
+    invalidatePagination,
   } = useAgentSession({
     projectId,
     modelId,
@@ -121,6 +140,7 @@ export function useAgentSidebar({
   });
 
   const handleSend = useCallback(async () => {
+    if (isStopping) return;
     if (agentStatus === "waiting_answer" || agentStatus === "waiting_approval") {
       toast.error(
         agentStatus === "waiting_answer"
@@ -149,6 +169,7 @@ export function useAgentSidebar({
     onClearAttachments();
     await sendPromise;
   }, [
+    isStopping,
     inputValue,
     agentStatus,
     modelId,
@@ -195,9 +216,16 @@ export function useAgentSidebar({
   return {
     messages: agentMessages,
     changes: agentChanges,
+    changeDetails: agentChangeDetails,
+    changeDetailsRevisionId: agentChangeDetailsRevisionId,
     pendingMessage,
     status: agentStatus,
     isRunning: isAgentRunning,
+    canContinue,
+    isContinuing,
+    isStopping,
+    onContinue: continueSession,
+    refreshCanContinue,
     isCompacting: isAgentCompacting,
     isRollbacking: isAgentRollbacking,
     currentStage: agentCurrentStage,
@@ -207,7 +235,9 @@ export function useAgentSidebar({
     onCancelPendingMessage: handleCancelPendingMessage,
     resetSession: resetAgentSession,
     loadSession: loadAgentSession,
+    invalidatePagination,
     refreshChanges: refreshAgentChanges,
+    loadChangeDetails: loadAgentChangeDetails,
     disconnectTransport: disconnectAgentTransport,
     reconnectTransport: reconnectAgentTransport,
     compactSession: compactAgentSession,
@@ -215,12 +245,19 @@ export function useAgentSidebar({
     MessagesComponent: (
       <AgentMessages
         messages={agentMessages}
+        onLoadEarlier={loadEarlier}
+        isLoadingEarlier={isLoadingEarlier}
+        messagesHasMore={messagesHasMore}
+        hasEarlierError={hasEarlierError}
+        historyGeneration={generation}
         isRunning={isAgentRunning}
         isRollbacking={isAgentRollbacking}
         status={agentStatus}
         isAttachmentProcessing={isAgentAttachmentProcessing}
         currentStage={agentCurrentStage}
-        scrollToBottomKey={scrollToBottomKey}
+        scrollToBottomKey={
+          scrollToBottomKey ? `${scrollToBottomKey}:${sessionLoadVersion}` : undefined
+        }
         onRollback={handleRollback}
         onFork={handleFork}
         onOpenMentionChapter={onOpenMentionChapter}
@@ -228,6 +265,8 @@ export function useAgentSidebar({
         onAbortRetry={abortAgentSession}
         changes={agentChanges}
         onAtBottomChange={onAtBottomChange}
+        onLoadingChange={onLoadingChange}
+        historyStatusHost={historyStatusHost}
         scrollToBottomFnRef={scrollToBottomFnRef}
       />
     ),
