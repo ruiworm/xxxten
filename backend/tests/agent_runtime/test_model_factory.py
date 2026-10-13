@@ -230,7 +230,7 @@ def test_create_chat_model_adds_opencode_headers_for_openai_compatible_endpoint(
         )
     )
 
-    assert model.default_headers["User-Agent"].startswith("NovelForge/")
+    assert model.default_headers["User-Agent"] == f"{settings.app_name}/{settings.app_version}"
     assert model.default_headers["x-opencode-session"] == "agent-session-1"
 
 
