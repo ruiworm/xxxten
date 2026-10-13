@@ -38,6 +38,7 @@ from app.api.routers import (
     dashboard,
     health,
     import_router,
+    openai_codex,
     model_icons,
     model_provider_catalog,
     model_providers,
@@ -698,6 +699,7 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["X-OAuth-Revocation-Confirmed"],
     )
     app.add_middleware(AccessLogMiddleware)
 
@@ -715,6 +717,7 @@ def create_app() -> FastAPI:
     app.include_router(world_info_entries.router, prefix=app_settings.api_v1_prefix)
     app.include_router(settings.router, prefix=app_settings.api_v1_prefix)
     app.include_router(import_router.router, prefix=app_settings.api_v1_prefix)
+    app.include_router(openai_codex.router, prefix=app_settings.api_v1_prefix)
     app.include_router(model_providers.router, prefix=app_settings.api_v1_prefix)
     app.include_router(model_provider_catalog.router, prefix=app_settings.api_v1_prefix)
     app.include_router(models.router, prefix=app_settings.api_v1_prefix)

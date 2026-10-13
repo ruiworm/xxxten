@@ -23,8 +23,16 @@ from app.core.json_safe import safe_json_loads
 from app.core.tool_args import unwrap_tool_arg_envelope
 
 
-def _is_llm_history_message(row: AgentRunMessage) -> bool:
-    return row.message_type == "message" and row.llm_visibility == "visible"
+def _is_llm_history_message(
+    row: AgentRunMessage, *, include_user_requests: bool = False
+) -> bool:
+    return (
+        (
+            row.message_type == "message"
+            or (include_user_requests and row.message_type == "user_request")
+        )
+        and row.llm_visibility == "visible"
+    )
 
 
 def _tool_calls(row: AgentRunMessage) -> list[dict] | None:
@@ -123,7 +131,13 @@ def _order_tool_results_by_call_order(
     return ordered
 
 
-async def load_history(db_session: AsyncSession, session_id: str) -> list[BaseMessage]:
+async def load_history(
+    db_session: AsyncSession,
+    session_id: str,
+    *,
+    include_user_requests: bool = False,
+    exclude_message_ids: set[str] | None = None,
+) -> list[BaseMessage]:
     """加载 session 历史，转成 LangChain BaseMessage 列表。
 
     规则：
@@ -147,7 +161,8 @@ async def load_history(db_session: AsyncSession, session_id: str) -> list[BaseMe
     rows = [
         r
         for r in rows
-        if _is_llm_history_message(r)
+        if _is_llm_history_message(r, include_user_requests=include_user_requests)
+        and (not exclude_message_ids or r.id not in exclude_message_ids)
         and not (r.role == "user" and r.status == "pending")
     ]
 
@@ -197,6 +212,7 @@ async def load_history(db_session: AsyncSession, session_id: str) -> list[BaseMe
             name=row.tool_name if row.role == "tool" else None,
             tool_call_id=row.tool_call_id,
             tool_calls=_tool_calls(row),
+            additional_kwargs=_user_additional_kwargs(row) if row.role == "user" else None,
             metadata={"part": "history", "row": row},
         )
         for row in filtered
@@ -227,12 +243,15 @@ async def load_history(db_session: AsyncSession, session_id: str) -> list[BaseMe
             messages.append(
                 HumanMessage(
                     content=part.content,
-                    additional_kwargs=_user_additional_kwargs(row),
+                    additional_kwargs=part.additional_kwargs or {},
                     response_metadata=_response_metadata(row),
                 )
             )
         elif part.role == "assistant":
             kwargs: dict = {}
+            responses_output = _message_metadata(row).get("responses_output")
+            if row.status == "complete" and isinstance(responses_output, list) and responses_output:
+                kwargs["responses_output"] = responses_output
             if idx == last_assistant_with_reasoning_idx and row.reasoning:
                 kwargs["reasoning_content"] = row.reasoning
             ai_msg = AIMessage(

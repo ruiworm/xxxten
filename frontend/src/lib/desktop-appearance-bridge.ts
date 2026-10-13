@@ -33,6 +33,7 @@ declare global {
       publishLanguage: (language: LanguageCode) => void;
       publishSocketDiagnostic: (payload: SocketDiagnosticPayload) => void;
       openFolder: (folderPath: string) => void;
+      openOpenAICodexAuthorization: (url: string) => Promise<void>;
     };
   }
 }
