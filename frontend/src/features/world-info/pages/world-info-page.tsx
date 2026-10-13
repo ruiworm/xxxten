@@ -33,7 +33,7 @@ import {
   batchDeleteWorldInfoEntries,
   batchToggleWorldInfoEntries,
 } from "@/lib/api-client";
-import { getPreference, setPreference } from "@/lib/local-db";
+import { getPreference, getRecentProjects, setPreference } from "@/lib/local-db";
 import type {
   WorldInfoEntry,
   WorldInfoEntryBrief,
@@ -41,6 +41,7 @@ import type {
 } from "@/lib/world-info.types";
 
 import { EntryEditor } from "../components/entry-editor";
+import { resolveWorldInfoProjectId } from "../lib/resolve-project";
 import { EntryList } from "../components/entry-list";
 import { ImportWorldInfoDialog } from "../components/import-world-info-dialog";
 import { useWorldInfoStore } from "../store/use-world-info-store";
@@ -128,24 +129,28 @@ export function WorldInfoPage() {
   const projects = useMemo(() => projectsData?.items ?? [], [projectsData?.items]);
   const projectIdFromUrl = searchParams.get("projectId");
 
+  const hasInitializedProjectRef = useRef(false);
+
   useEffect(() => {
     const initProject = async () => {
-      if (currentProjectId || projects.length === 0) return;
-      const cachedProjectId = await getPreference(LAST_PROJECT_KEY);
-      const nextProjectId =
-        (projectIdFromUrl && projects.some((project) => project.id === projectIdFromUrl)
-          ? projectIdFromUrl
-          : null) ??
-        (cachedProjectId && projects.some((project) => project.id === cachedProjectId)
-          ? cachedProjectId
-          : null) ??
-        projects[0]?.id ??
-        null;
-      setCurrentProject(nextProjectId);
+      if (hasInitializedProjectRef.current || projects.length === 0) return;
+      const [cachedProjectId, recentProjects] = await Promise.all([
+        getPreference(LAST_PROJECT_KEY),
+        getRecentProjects(),
+      ]);
+      hasInitializedProjectRef.current = true;
+      setCurrentProject(
+        resolveWorldInfoProjectId({
+          urlProjectId: projectIdFromUrl,
+          recentProjectIds: recentProjects.map((project) => project.projectId),
+          cachedProjectId,
+          projectIds: projects.map((project) => project.id),
+        }),
+      );
     };
 
     void initProject();
-  }, [currentProjectId, projectIdFromUrl, projects, setCurrentProject]);
+  }, [projectIdFromUrl, projects, setCurrentProject]);
 
   useEffect(() => {
     if (currentProjectId) void setPreference(LAST_PROJECT_KEY, currentProjectId);

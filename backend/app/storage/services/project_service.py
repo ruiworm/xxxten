@@ -12,8 +12,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import NotFoundError
 from app.core.storage import delete_cover_file, save_cover_file
 from app.storage.models.project import Project
-from app.storage.repos import chapter_repo, character_relationship_repo, project_repo, volume_repo
-from app.storage.services import task_service, volume_service
+from app.storage.repos import (
+    chapter_repo,
+    character_relationship_repo,
+    project_repo,
+    volume_repo,
+    world_info_repo,
+)
+from app.storage.services import task_service, volume_service, world_info_service
 from app.storage.services.revision_service import delete_revision_data_by_project
 
 
@@ -48,6 +54,8 @@ async def create_project(
     project = Project(title=title, description=description)
     project = await project_repo.create(session, project)
     await volume_service.create_default_volume(session, project.id)
+    # 世界书与项目 1:1，新建项目时即分配，避免「新项目没有世界书」的中间态。
+    await world_info_service.get_or_create_world_info_by_project(session, project.id)
 
     # 如果提供了封面文件，保存封面
     if cover_file:
@@ -170,6 +178,11 @@ async def delete_project(session: AsyncSession, project_id: str) -> None:
     project = await get_project(session, project_id)
 
     await character_relationship_repo.remove_for_project(session, project_id)
+
+    # 世界书与项目 1:1，删除项目时一并清掉，避免留下孤儿世界书与条目。
+    world_info = await world_info_repo.get_by_project_id(session, project_id)
+    if world_info is not None:
+        await world_info_service.delete_world_info(session, world_info.id)
 
     await task_service.delete_all_tasks(session, project_id)
     await delete_revision_data_by_project(session, project_id)

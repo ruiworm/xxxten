@@ -4,7 +4,7 @@ Dashboard Service - LLM API 仪表盘查询编排。
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -54,6 +54,20 @@ class DashboardStatsResult:
     options: DashboardFilterOptionsResult
 
 
+def _to_utc(value: datetime | None) -> datetime | None:
+    """把客户端传入的时间归一化为带时区的 UTC。
+
+    历史版本的前端会传「无时区的裸本地时间」，而 agent_audit_logs.created_at 是
+    UTCDateTime 列，绑定裸时间会抛 ValueError 导致整个统计接口 500。
+    这里对缺失时区的输入按 UTC 补齐，保证接口不再崩溃。
+    """
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 def build_filters(
     project_id: str | None = None,
     model_provider: str | None = None,
@@ -77,8 +91,8 @@ def build_filters(
         status=status,
         task_id=task_id,
         session_id=session_id,
-        start_at=start_at,
-        end_at=end_at,
+        start_at=_to_utc(start_at),
+        end_at=_to_utc(end_at),
         search=search.strip() if search else None,
     )
 

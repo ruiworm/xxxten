@@ -66,5 +66,10 @@ export function toIsoDateTime(
 ): string | undefined {
   if (!value) return undefined;
   const suffix = boundary === "start" ? "T00:00:00" : "T23:59:59";
-  return `${value}${suffix}`;
+  // 拼成当天本地时间后再转真实 ISO（带时区）。
+  // 直接返回裸时间字符串会让后端的 UTCDateTime 比较抛
+  // "Datetime values must have timezone information" 而整体 500。
+  const localDate = new Date(`${value}${suffix}`);
+  if (Number.isNaN(localDate.getTime())) return undefined;
+  return localDate.toISOString();
 }
