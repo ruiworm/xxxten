@@ -51,7 +51,21 @@ mac:
   target:
     - dmg
   category: public.app-category.productivity
-  identity: null
+  # 临时签名（ad-hoc）：
+  # identity: null 会让 electron-builder 直接跳过签名（app-builder-lib 的
+  # MacTargetHelper.handleNullIdentity 会打 "skipped macOS code signing" 并返回 false）。
+  # 而打包过程会重命名 Electron.app 与各 Helper、改写 Info.plist，这些操作会破坏
+  # Electron 官方签名的封条，却又不重新签名 —— 结果是「有签名但不合法」，
+  # macOS 判定为「已损坏，无法打开」，买家只能手动清隔离属性，且部分机器清完仍失败。
+  # 改成 "-" 后 electron-builder 会在打包末尾做一次自洽的 ad-hoc 签名，
+  # 买家侧只需 xattr -cr 一次即可可靠启动。
+  # 后续若购买 Apple Developer 账号做正式签名 + 公证，把这里换成证书身份、
+  # 并把 hardenedRuntime 改回 true、补上 entitlements 即可。
+  identity: "-"
+  # ad-hoc 签名 + hardenedRuntime 会因库校验导致启动失败（需
+  # com.apple.security.cs.disable-library-validation 授权）。本项目不做公证，
+  # 该项没有收益，故关闭。
+  hardenedRuntime: false
 
 linux:
   icon: resources/icons
