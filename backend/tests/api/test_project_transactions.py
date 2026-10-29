@@ -15,6 +15,7 @@ from app.api.routers import projects
 from app.storage import database
 from app.storage.models.project import Project
 from app.storage.models.volume import Volume
+from app.storage.models.world_info import WorldInfo
 
 
 @pytest.fixture(params=["sqlite", "postgresql"])
@@ -39,7 +40,11 @@ async def transaction_sessions(
     engine = create_async_engine(database_url)
     try:
         async with engine.begin() as connection:
-            await connection.run_sync(Project.metadata.create_all, tables=[Project.__table__, Volume.__table__])
+            # WorldInfo 是本地定制：创建项目时会一并创建默认世界书（上游无此逻辑）。
+            await connection.run_sync(
+                Project.metadata.create_all,
+                tables=[Project.__table__, Volume.__table__, WorldInfo.__table__],
+            )
         factory = async_sessionmaker(engine, expire_on_commit=False, autoflush=False)
         monkeypatch.setattr(database, "_get_session_factory", lambda: factory)
         yield factory

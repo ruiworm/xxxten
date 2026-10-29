@@ -17,7 +17,7 @@ class CatalogProviderModelSummary(BaseModel):
 
 
 class CatalogProviderSummary(BaseModel):
-    provider_type: str = Field(description="OpenFic provider type")
+    provider_type: str = Field(description="NovelForge provider type")
     display_name: str = Field(description="Provider display name")
     npm: str | None = Field(default=None, description="Default Models.dev SDK package")
     default_url: str | None = Field(

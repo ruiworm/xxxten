@@ -95,9 +95,9 @@ interface AgentInputHistory {
 }
 
 /**
- * OpenFic 本地数据库
+ * NovelForge 本地数据库
  */
-class OpenFicDB extends Dexie {
+class NovelForgeDB extends Dexie {
   projectLastChapters!: EntityTable<ProjectLastChapter, "projectId">;
   projectTabs!: EntityTable<ProjectTabs, "projectId">;
   userPreferences!: EntityTable<UserPreference, "key">;
@@ -107,7 +107,7 @@ class OpenFicDB extends Dexie {
   recentProjects!: EntityTable<RecentProject, "slot">;
 
   constructor() {
-    super("OpenFicDB");
+    super("NovelForgeDB");
 
     this.version(2).stores({
       // projectId 作为主键
@@ -170,7 +170,7 @@ class OpenFicDB extends Dexie {
 }
 
 // 单例数据库实例
-export const db = new OpenFicDB();
+export const db = new NovelForgeDB();
 
 const writingWorkingCopyOperations = new Map<string, Promise<void>>();
 

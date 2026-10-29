@@ -1,5 +1,5 @@
 import { app } from "electron";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { readdir, rename, rm } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -65,10 +65,20 @@ const bomReadyPaths = new Set<string>();
 function ensureUtf8Bom(logPath: string): void {
   if (bomReadyPaths.has(logPath)) return;
   try {
-    const content = readFileSync(logPath);
-    if (!content.subarray(0, UTF8_BOM.length).equals(UTF8_BOM)) {
-      writeFileSync(logPath, Buffer.concat([UTF8_BOM, content]));
+    const fd = openSync(logPath, "r");
+    const header = Buffer.alloc(UTF8_BOM.length);
+    let bytesRead: number;
+    try {
+      bytesRead = readSync(fd, header, 0, header.length, 0);
+    } finally {
+      closeSync(fd);
     }
+    if (bytesRead === UTF8_BOM.length && header.equals(UTF8_BOM)) return;
+
+    // Only legacy files without a BOM need a one-time content migration.
+    // Normal appends must never allocate a buffer the size of the log file.
+    const content = readFileSync(logPath);
+    writeFileSync(logPath, Buffer.concat([UTF8_BOM, content]));
   } catch (error) {
     if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
     writeFileSync(logPath, UTF8_BOM);
@@ -105,7 +115,8 @@ export function createLogStream(name: string): Writable {
       buffer += text.replace(/\r/g, "\n");
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
-      for (const line of lines) flush(line);
+      // One append per chunk instead of per traceback line; keep skipping empty lines.
+      flush(lines.filter((line) => line.length > 0).join("\n"));
       callback();
     },
     final(callback) {

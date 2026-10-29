@@ -37,7 +37,7 @@ test("all supported Python targets use exactly GitHub and Aliyun with identical 
 
 function fixture(source, overrides = {}, metadataOverrides = {}) {
   const version = "0.12.2";
-  const metadata = { version, files: [{ url: `OpenFic-${version}-win-x86_64-setup.exe`, sha512: "checksum", size: 123 }], ...metadataOverrides };
+  const metadata = { version, files: [{ url: `NovelForge-${version}-win-x86_64-setup.exe`, sha512: "checksum", size: 123 }], ...metadataOverrides };
   const requests = [];
   return {
     requests,
@@ -57,8 +57,8 @@ test("both release APIs supply metadata and notes, without retaining redirect CD
     assert.equal(requests[0], source.url);
     assert.equal(requests[1], `${source.downloadBase}v0.12.2/latest-win-x86_64.yml`);
     const maps = releaseBlockmapUrls(snapshot, "0.12.1");
-    assert.equal(maps[0].href, `${source.downloadBase}v0.12.1/OpenFic-0.12.1-win-x86_64-setup.exe.blockmap`);
-    assert.equal(maps[1].href, `${source.downloadBase}v0.12.2/OpenFic-0.12.2-win-x86_64-setup.exe.blockmap`);
+    assert.equal(maps[0].href, `${source.downloadBase}v0.12.1/NovelForge-0.12.1-win-x86_64-setup.exe.blockmap`);
+    assert.equal(maps[1].href, `${source.downloadBase}v0.12.2/NovelForge-0.12.2-win-x86_64-setup.exe.blockmap`);
   }
 });
 
@@ -72,8 +72,8 @@ test("fallback requests the pinned release and rejects mismatched checksum, vers
     [{ tag_name: "v0.12.3" }, {}],
     [{ prerelease: true }, {}],
     [{}, { version: "0.12.3" }],
-    [{}, { files: [{ url: "OpenFic-0.12.2-win-aarch64-setup.exe", sha512: "checksum" }] }],
-    [{}, { files: [{ url: "OpenFic-0.12.2-win-x86_64-setup.exe", sha512: "other" }] }],
+    [{}, { files: [{ url: "NovelForge-0.12.2-win-aarch64-setup.exe", sha512: "checksum" }] }],
+    [{}, { files: [{ url: "NovelForge-0.12.2-win-x86_64-setup.exe", sha512: "other" }] }],
   ]) {
     await assert.rejects(loadReleaseSnapshot(source, "x86_64", fixture(source, release, metadata).read, expected));
   }

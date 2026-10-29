@@ -64,7 +64,7 @@ def test_get_encoding_seeds_bundled_resource_for_tiktoken_registry(
 
     assert requested_encodings == [encoding_name]
     assert encoding.name == encoding_name
-    assert encoding.encode("OpenFic 离线 Token 计数")
+    assert encoding.encode("NovelForge 离线 Token 计数")
 
 
 @pytest.fixture(autouse=True)
@@ -127,7 +127,7 @@ def test_get_encoding_repairs_corrupted_cache_before_tiktoken_load(
         tiktoken_utils._ENCODING_RESOURCE_DIR / "o200k_base.tiktoken"
     ).read_bytes()
     assert cache_path.read_bytes() == bundled
-    assert encoding.encode("OpenFic 离线缓存重建")
+    assert encoding.encode("NovelForge 离线缓存重建")
 
 
 def test_cache_validation_runs_once_per_process(
@@ -166,7 +166,7 @@ def test_character_token_count_uses_shared_offline_encoding(
         raising=False,
     )
 
-    assert character_service.calculate_token_count("OpenFic") == 7
+    assert character_service.calculate_token_count("NovelForge") == 7
 
 
 def test_world_info_token_count_uses_shared_offline_encoding(
@@ -179,4 +179,4 @@ def test_world_info_token_count_uses_shared_offline_encoding(
         raising=False,
     )
 
-    assert world_info_entry_service._calculate_token_count("OpenFic") == 7
+    assert world_info_entry_service._calculate_token_count("NovelForge") == 7

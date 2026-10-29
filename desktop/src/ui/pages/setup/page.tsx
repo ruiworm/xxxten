@@ -40,7 +40,7 @@ const STEP_TITLE_KEYS: Record<SetupStep, string> = {
   "extract-python": "desktop.setup.extractPython",
   "create-venv": "desktop.setup.createRuntime",
   "install-uv": "desktop.setup.installUv",
-  "install-openfic": "desktop.setup.installOpenFic",
+  "install-openfic": "desktop.setup.installNovelForge",
 };
 
 const STEP_DETAIL_KEYS: Record<SetupStep, string> = {
@@ -48,7 +48,7 @@ const STEP_DETAIL_KEYS: Record<SetupStep, string> = {
   "extract-python": "desktop.setup.extractPythonDetail",
   "create-venv": "desktop.setup.createRuntimeDetail",
   "install-uv": "desktop.setup.installUvDetail",
-  "install-openfic": "desktop.setup.installOpenFicDetail",
+  "install-openfic": "desktop.setup.installNovelForgeDetail",
 };
 
 const INITIAL_STEPS: StepState = {

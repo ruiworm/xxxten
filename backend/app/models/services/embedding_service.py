@@ -29,7 +29,7 @@ async def probe_provider_embedding_dimensions(
             custom_headers=service.get_decrypted_custom_headers(provider) or None,
         )
     )
-    vector = await client.embed_single("OpenFic embedding dimension check")
+    vector = await client.embed_single("NovelForge embedding dimension check")
     if not vector or any(not math.isfinite(value) for value in vector):
         raise ValueError("嵌入模型返回了空向量或无效向量，无法获取维度")
     return len(vector)

@@ -1,5 +1,5 @@
 appId: com.openfic.app
-productName: OpenFic
+productName: NovelForge
 
 directories:
   output: dist-electron
@@ -17,7 +17,7 @@ extraResources:
     to: app-update.yml
 
 win:
-  artifactName: OpenFic-${version}-win-${arch}.${ext}
+  artifactName: NovelForge-${version}-win-${arch}.${ext}
   target:
     - target: nsis
       arch:
@@ -28,7 +28,7 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   include: build/installer.nsh
-  artifactName: OpenFic-${version}-win-${arch}-setup.${ext}
+  artifactName: NovelForge-${version}-win-${arch}-setup.${ext}
 
 publish:
   provider: generic

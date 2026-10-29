@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { app } from "electron";
 import { stopBackendProcess } from "../../dist/main/process.js";
-import { startLocalOpenFicBackend } from "../../dist/main/runtime/openfic.js";
+import { startLocalNovelForgeBackend } from "../../dist/main/runtime/openfic.js";
 import { ensurePortablePython } from "../../dist/main/runtime/python.js";
 
 const BACKEND_STOP_TIMEOUT_MS = 15_000;
@@ -27,7 +27,7 @@ function run(command, args, cwd) {
 
 async function getWheelPath() {
   const wheelPath = process.argv[2];
-  if (!wheelPath?.endsWith(".whl")) throw new Error("OpenFic wheel path is required");
+  if (!wheelPath?.endsWith(".whl")) throw new Error("NovelForge wheel path is required");
   await access(wheelPath);
   return path.resolve(wheelPath);
 }
@@ -79,14 +79,14 @@ async function smokeTestRuntime() {
     const python = await ensurePortablePython(runtimeDir, (phase, message) => console.log(`${phase}: ${message}`), () => {});
     const expectedVersion = await readDesktopVersion();
     const wheelPath = await getWheelPath();
-    console.log(`Installing OpenFic runtime ${expectedVersion} from ${wheelPath}`);
+    console.log(`Installing NovelForge runtime ${expectedVersion} from ${wheelPath}`);
     await run(python.pythonPath, ["-m", "venv", venvDir], runtimeDir);
     await run(venvPythonPath, ["-m", "pip", "install", "uv"], runtimeDir);
     await run(uvPath, ["pip", "install", "--python", venvPythonPath, wheelPath], runtimeDir);
 
-    const { handle } = await startLocalOpenFicBackend(venvPythonPath, expectedVersion);
+    const { handle } = await startLocalNovelForgeBackend(venvPythonPath, expectedVersion);
     backend = handle;
-    console.log(`OpenFic runtime smoke test passed: ${backend.baseUrl}`);
+    console.log(`NovelForge runtime smoke test passed: ${backend.baseUrl}`);
   } catch (error) {
     const backendLogPath = path.join(userDataDir, "logs", "backend.log");
     try {

@@ -42,11 +42,11 @@ def build_frontend_assets(backend_dir: Path, frontend_dir: Path, version: str) -
     pnpm = shutil.which("pnpm")
     if pnpm is None:
         raise RuntimeError(
-            "pnpm is required for building the OpenFic frontend but it was not found. "
+            "pnpm is required for building the NovelForge frontend but it was not found. "
             f"请先构建前端产物到 {target_dir} 并设置 OPENFIC_REUSE_FRONTEND=1 复用。",
         )
 
-    stderr.write(">>> Building OpenFic frontend\n")
+    stderr.write(">>> Building NovelForge frontend\n")
     stderr.write("### pnpm install --frozen-lockfile\n")
     subprocess.run([pnpm, "install", "--frozen-lockfile"], check=True, cwd=frontend_dir)  # noqa: S603
 

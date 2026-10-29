@@ -169,7 +169,7 @@ def test_tool_result_context_formats_web_fetch_content() -> None:
 def test_filter_tool_result_metadata_formats_named_web_search_message() -> None:
     content = json.dumps(
         {
-            "query": "OpenFic",
+            "query": "NovelForge",
             "results": [
                 {
                     "title": "项目主页",
@@ -190,7 +190,7 @@ def test_filter_tool_result_metadata_formats_named_web_search_message() -> None:
     filtered = filter_tool_result_metadata([message])
 
     assert filtered[0].content == (
-        "[ `OpenFic` 的搜索结果 ]\n\n"
+        "[ `NovelForge` 的搜索结果 ]\n\n"
         "1. 项目主页\n"
         "    项目简介\n"
         "    URL: https://example.com/openfic"

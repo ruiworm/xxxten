@@ -191,7 +191,7 @@ class TunnelManager:
             binary = executable(payload.provider)
             if not binary:
                 raise ValueError(
-                    "Install cloudflared or ngrok on the OpenFic server first"
+                    "Install cloudflared or ngrok on the NovelForge server first"
                 )
             await self._stop()
             origin = f"http://127.0.0.1:{port}"

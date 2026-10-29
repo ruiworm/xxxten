@@ -10,7 +10,7 @@ from app.background.jobs.definitions import retrieval_chapter_index_batch as wor
 from app.core.encryption import EncryptionService
 from app.models.repos import model_provider_repo, model_repo
 from app.retrieval.chapter_index import ChapterIndexIntegrationService
-from app.retrieval.service import OpenFicRetrievalService
+from app.retrieval.service import NovelForgeRetrievalService
 from app.settings import settings
 
 
@@ -171,7 +171,7 @@ async def test_bound_index_dimensions_cannot_be_cleared_or_changed(
 ):
     model = await _model(session, 3)
     contract = ChapterIndexIntegrationService().build_contract(model)
-    await OpenFicRetrievalService(base_dir=tmp_path / "lancedb").register_index(
+    await NovelForgeRetrievalService(base_dir=tmp_path / "lancedb").register_index(
         session,
         "bound-index",
         contract,

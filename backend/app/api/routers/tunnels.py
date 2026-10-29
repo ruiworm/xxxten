@@ -84,15 +84,15 @@ async def start_tunnel(
 ) -> dict:
     if not request.app.state.auth_service.enabled:
         raise HTTPException(
-            409, "Configure OPENFIC_AUTH_PASSWORD and restart OpenFic first"
+            409, "Configure OPENFIC_AUTH_PASSWORD and restart NovelForge first"
         )
     if not request.app.state.tunnel_frontend_available:
         raise HTTPException(
-            409, "Build or install the OpenFic frontend before starting a tunnel"
+            409, "Build or install the NovelForge frontend before starting a tunnel"
         )
     server = request.scope.get("server")
     if not server or not server[1]:
-        raise HTTPException(409, "Cannot determine the OpenFic server port")
+        raise HTTPException(409, "Cannot determine the NovelForge server port")
 
     persisted_config = await load_tunnel_config(session)
     provider = payload.provider or persisted_config.provider

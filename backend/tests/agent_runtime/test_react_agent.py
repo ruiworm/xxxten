@@ -164,7 +164,7 @@ async def test_invoke_model_does_not_concatenate_repeated_tool_names() -> None:
                         "index": 0,
                         "id": None,
                         "name": "list_characters",
-                        "args": '{"query":"Open',
+                        "args": '{"query":"Novel',
                     }
                 ],
             )
@@ -175,7 +175,7 @@ async def test_invoke_model_does_not_concatenate_repeated_tool_names() -> None:
                         "index": 0,
                         "id": None,
                         "name": "list_characters",
-                        "args": 'Fic"}',
+                        "args": 'Forge"}',
                     }
                 ],
             )
@@ -187,7 +187,7 @@ async def test_invoke_model_does_not_concatenate_repeated_tool_names() -> None:
     assert response.tool_calls == [
         {
             "name": "list_characters",
-            "args": {"query": "OpenFic"},
+            "args": {"query": "NovelForge"},
             "id": "call-list-characters",
             "type": "tool_call",
         }
@@ -206,7 +206,7 @@ async def test_invoke_model_preserves_normal_incremental_tool_calls() -> None:
                         "index": 0,
                         "id": "call-list-characters",
                         "name": "list_characters",
-                        "args": '{"query":"Open',
+                        "args": '{"query":"Novel',
                     }
                 ],
             )
@@ -217,7 +217,7 @@ async def test_invoke_model_preserves_normal_incremental_tool_calls() -> None:
                         "index": 0,
                         "id": None,
                         "name": None,
-                        "args": 'Fic"}',
+                        "args": 'Forge"}',
                     }
                 ],
             )
@@ -230,7 +230,7 @@ async def test_invoke_model_preserves_normal_incremental_tool_calls() -> None:
     assert response.tool_calls == [
         {
             "name": "list_characters",
-            "args": {"query": "OpenFic"},
+            "args": {"query": "NovelForge"},
             "id": "call-list-characters",
             "type": "tool_call",
         }

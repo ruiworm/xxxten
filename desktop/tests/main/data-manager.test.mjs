@@ -23,7 +23,7 @@ async function createDataDir(base, name) {
   return dir;
 }
 
-test("inspects a data directory with recognizable OpenFic data", async () => {
+test("inspects a data directory with recognizable NovelForge data", async () => {
   const base = await mkdtemp(path.join(os.tmpdir(), "openfic-data-"));
   try {
     const dir = await createDataDir(base, "src");

@@ -1,16 +1,16 @@
-# OpenFic
+# NovelForge
 
-![GitHub Repo stars](https://img.shields.io/github/stars/syrizelink/OpenFic)
-![AtomGit Repo stars](https://atomgit.com/Syrize/OpenFic/star/badge.svg)
+![GitHub Repo stars](https://img.shields.io/github/stars/novelforgelink/NovelForge)
+![AtomGit Repo stars](https://atomgit.com/NovelForge/NovelForge/star/badge.svg)
 ![License](https://img.shields.io/badge/License-Apache_2.0-red)
-![GitHub Release](https://img.shields.io/github/v/release/syrizelink/OpenFic?logo=githubactions&logoColor=white&color=yellow)
-![Release Downloads](https://img.shields.io/github/downloads/syrizelink/OpenFic/total?logo=github&logoColor=white&label=Release%20downloads&color=yellow)
+![GitHub Release](https://img.shields.io/github/v/release/novelforgelink/NovelForge?logo=githubactions&logoColor=white&color=yellow)
+![Release Downloads](https://img.shields.io/github/downloads/novelforgelink/NovelForge/total?logo=github&logoColor=white&label=Release%20downloads&color=yellow)
 ![PyPI - Version](https://img.shields.io/pypi/v/openfic?logo=pypi&logoColor=white&color=green)
 [![交流群](https://img.shields.io/badge/交流群-1105304435-12B7F5?logo=qq&logoColor=white)](https://qun.qq.com/universal-share/share?ac=1&authKey=XxKBo33K1IAy%2FejDsGPWOn51pCNk1Bu1%2F2dtldtWCWSdPGor4tZkaboxgrGkz2BS&busi_data=eyJncm91cENvZGUiOiIxMTA1MzA0NDM1IiwidG9rZW4iOiJCY1NuV2s5d1B2QmI2R0ZiMldMbDE4MVRPV1puMFJlWjZIRlZrRjk4WGUwY2wvdUlaWEFPZ1cvV0lLbWl6d3JwIiwidWluIjoiMjUzMjEyNDQwNCJ9&data=B2VDUuvIYSScsKPwMeFB6txn6fj8I18zG6EKsmsrZDwPpmNCoJ7r5NTLtmUUf58MK3Lw9evkkPg28EglHJNONA&svctype=4&tempid=h5_group_info)
 
 [中文](./README.md) | English
 
-**OpenFic** is an all-in-one, cross-platform, AI-native writing tool built for fiction authors. It helps you build world, design characters, and shape custom workflows, so the Agent fits your writing process instead of forcing you into its own.
+**NovelForge** is an all-in-one, cross-platform, AI-native writing tool built for fiction authors. It helps you build world, design characters, and shape custom workflows, so the Agent fits your writing process instead of forcing you into its own.
 
 ![Demo Screenshot](./demo.png)
 
@@ -18,20 +18,20 @@
 
 [![Infistar Banner](docs/sponsors/infistar.png)](https://www.infistar.cc/register?aff=WRDQ4VSF&ref_source=link)
 
-**OpenFic × Infistar.cc | Highly Available API for All Models**
+**NovelForge × Infistar.cc | Highly Available API for All Models**
 
 Thanks to [Infistar.cc](https://www.infistar.cc/register?aff=WRDQ4VSF&ref_source=link) for sponsoring this project.
 
 - ⚡ **Reliable, enterprise-grade model services**: transparent pricing starting at just 1% of official rates, with multi-node redundancy to reduce rate limits and timeout interruptions during long-form writing
-- 🔀 **Easy access to leading models**: native compatibility with OpenFic lets you use ChatGPT, Claude, Gemini, Kimi, GLM, DeepSeek, and more with a single API key, so you can quickly choose suitable models for each Agent role
+- 🔀 **Easy access to leading models**: native compatibility with NovelForge lets you use ChatGPT, Claude, Gemini, Kimi, GLM, DeepSeek, and more with a single API key, so you can quickly choose suitable models for each Agent role
 - 📚 **Support for content retrieval**: Embedding and Rerank models enable fast indexing and queries for projects that require very long contexts
 
-🎁 **Exclusive benefits for OpenFic users**: register through our [exclusive referral link](https://www.infistar.cc/register?aff=WRDQ4VSF&ref_source=link) to receive $5 in trial credits and a special offer on your first top-up, and try the API service right away!
+🎁 **Exclusive benefits for NovelForge users**: register through our [exclusive referral link](https://www.infistar.cc/register?aff=WRDQ4VSF&ref_source=link) to receive $5 in trial credits and a special offer on your first top-up, and try the API service right away!
 
-## When to Use OpenFic
+## When to Use NovelForge
 
 > [!Tip]  
-> *OpenFic is designed for Agent-assisted writing, not one-click novel generation. It is first and foremost a writing tool for fiction, and then an AI Agent system built around that workflow.*
+> *NovelForge is designed for Agent-assisted writing, not one-click novel generation. It is first and foremost a writing tool for fiction, and then an AI Agent system built around that workflow.*
 
 #### It works well when you:
 
@@ -63,10 +63,10 @@ Thanks to [Infistar.cc](https://www.infistar.cc/register?aff=WRDQ4VSF&ref_source
 
 ### 🐳 Docker (Recommended)
 
-If you are self-hosting, Docker is the recommended way to run OpenFic.
+If you are self-hosting, Docker is the recommended way to run NovelForge.
 
 ```bash
-docker run -d -p 8000:8000 -v "openfic:/data" --name openfic ghcr.io/syrizelink/openfic:latest
+docker run -d -p 8000:8000 -v "openfic:/data" --name openfic ghcr.io/novelforgelink/openfic:latest
 ```
 
 ### 🐍 Python pip
@@ -74,7 +74,7 @@ docker run -d -p 8000:8000 -v "openfic:/data" --name openfic ghcr.io/syrizelink/
 > [!WARNING]  
 > Before you start, make sure Python 3.12+ is installed.
 
-#### 1. Install OpenFic
+#### 1. Install NovelForge
 
 ```bash
 pip install openfic
@@ -88,7 +88,7 @@ openfic serve
 
 ### 🖥 Desktop App
 
-Download the desktop app from [the Release Page](https://github.com/syrizelink/OpenFic/releases) and run it natively on your system.
+Download the desktop app from [the Release Page](https://github.com/ruiworm/OpenFic/releases) and run it natively on your system.
 
 ## Contributing
 
@@ -102,11 +102,11 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed contribution guidelines.
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=syrizelink%2FOpenFic&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=novelforgelink%2FNovelForge&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=syrizelink/OpenFic&type=date&theme=dark&legend=top-left&sealed_token=JHQpP1A05gPA9RleC2GLLnXJ5mg_nQHq_VosoaeQPU2yPGneRUJNEyxaEy--2atezknlCUb5HxLE0HB31gJAOr1ezJZHYW92VUSlWh0Ej0bkt4Q3AWVUHQ" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=syrizelink/OpenFic&type=date&legend=top-left&sealed_token=JHQpP1A05gPA9RleC2GLLnXJ5mg_nQHq_VosoaeQPU2yPGneRUJNEyxaEy--2atezknlCUb5HxLE0HB31gJAOr1ezJZHYW92VUSlWh0Ej0bkt4Q3AWVUHQ" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=syrizelink/OpenFic&type=date&legend=top-left&sealed_token=JHQpP1A05gPA9RleC2GLLnXJ5mg_nQHq_VosoaeQPU2yPGneRUJNEyxaEy--2atezknlCUb5HxLE0HB31gJAOr1ezJZHYW92VUSlWh0Ej0bkt4Q3AWVUHQ" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=novelforgelink/NovelForge&type=date&theme=dark&legend=top-left&sealed_token=JHQpP1A05gPA9RleC2GLLnXJ5mg_nQHq_VosoaeQPU2yPGneRUJNEyxaEy--2atezknlCUb5HxLE0HB31gJAOr1ezJZHYW92VUSlWh0Ej0bkt4Q3AWVUHQ" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=novelforgelink/NovelForge&type=date&legend=top-left&sealed_token=JHQpP1A05gPA9RleC2GLLnXJ5mg_nQHq_VosoaeQPU2yPGneRUJNEyxaEy--2atezknlCUb5HxLE0HB31gJAOr1ezJZHYW92VUSlWh0Ej0bkt4Q3AWVUHQ" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=novelforgelink/NovelForge&type=date&legend=top-left&sealed_token=JHQpP1A05gPA9RleC2GLLnXJ5mg_nQHq_VosoaeQPU2yPGneRUJNEyxaEy--2atezknlCUb5HxLE0HB31gJAOr1ezJZHYW92VUSlWh0Ej0bkt4Q3AWVUHQ" />
  </picture>
 </a>
 

@@ -5,7 +5,7 @@ import test from "node:test";
 const state = globalThis.openficUpdateTest = {
   preference: "mirror", requests: [], downloads: [], events: [], failApi: null, failDownload: null, cancelDownload: false,
 };
-const metadata = { version: "0.12.2", files: [{ url: "OpenFic-0.12.2-win-x86_64-setup.exe", sha512: "same-checksum", size: 123 }] };
+const metadata = { version: "0.12.2", files: [{ url: "NovelForge-0.12.2-win-x86_64-setup.exe", sha512: "same-checksum", size: 123 }] };
 state.fetch = async (url) => {
   state.requests.push(String(url));
   if (state.failApi && String(url).includes(state.failApi)) return new Response("Unavailable", { status: 503 });
@@ -44,7 +44,7 @@ const hook = registerHooks({
   resolve(specifier, context, nextResolve) {
     if (specifier === "electron-updater") return asModule(mockUpdater);
     if (specifier === "electron") return asModule(`
-      export const app = { isPackaged: true, getPath: () => 'C:/openfic-test/OpenFic.exe' };
+      export const app = { isPackaged: true, getPath: () => 'C:/openfic-test/NovelForge.exe' };
       export const shell = { openExternal: async () => {} };
       export const net = { fetch: (...args) => globalThis.openficUpdateTest.fetch(...args) };
     `);
@@ -101,6 +101,6 @@ test("download failure retries the same version on the alternate source without 
   assert.equal(state.downloads.length, 2);
   assert.ok(state.downloads[0].includes("atomgit.com"));
   assert.ok(state.downloads[1].includes("github.com"));
-  assert.ok(state.downloads.every((url) => url.includes("v0.12.2/OpenFic-0.12.2-win-x86_64-setup.exe")));
+  assert.ok(state.downloads.every((url) => url.includes("v0.12.2/NovelForge-0.12.2-win-x86_64-setup.exe")));
   assert.ok(!state.events.some(({ status }) => status === "error"));
 });

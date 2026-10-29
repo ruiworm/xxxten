@@ -46,7 +46,7 @@ OPENAI_CODEX_TOKEN_ENDPOINT = "https://auth.openai.com/api/accounts/oauth/token"
 OPENAI_CODEX_JWKS_URI = "https://auth.openai.com/.well-known/jwks.json"
 OPENAI_CODEX_RESOURCE = OPENAI_CODEX_API_BASE_URL
 OPENAI_CODEX_DYNAMIC_CLIENT_ID = "dynamic_agent_client"
-OPENAI_CODEX_AGENT_NAME = "OpenFic"
+OPENAI_CODEX_AGENT_NAME = "NovelForge"
 OPENAI_CODEX_SCOPES = (
     "openid",
     "profile",

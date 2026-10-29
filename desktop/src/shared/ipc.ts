@@ -3,6 +3,7 @@ import type { DesktopConfig, DesktopInstance, DesktopInstanceAppearance } from "
 export const IpcChannels = {
   getConfig: "config:get",
   saveConfig: "config:save",
+  saveInstanceAccessKey: "instance:save-access-key",
   saveInstanceAppearance: "instance:save-appearance",
   initializeApp: "app:initialize",
   cancelStartup: "app:cancel-startup",
@@ -55,12 +56,7 @@ export const IpcChannels = {
   openFolder: "shell:open-folder",
 } as const;
 
-export type SetupStep =
-  | "download-python"
-  | "extract-python"
-  | "create-venv"
-  | "install-uv"
-  | "install-openfic";
+export type SetupStep = "download-python" | "extract-python" | "create-venv" | "install-uv" | "install-openfic";
 
 export interface SetupProgressEvent {
   step: SetupStep;
@@ -76,6 +72,11 @@ export interface SaveConfigRequest {
 
 export interface SaveInstanceAppearanceRequest extends DesktopInstanceAppearance {
   instanceId: string;
+}
+
+export interface SaveInstanceAccessKeyRequest {
+  instanceId: string;
+  accessKey: string;
 }
 
 export interface SaveZoomFactorRequest {
@@ -181,14 +182,7 @@ export interface StartupProgressEvent {
   /** Whether the current operation has no reliable percentage. */
   indeterminate?: boolean;
   /** Backend maintenance phase used to localize the current detail. */
-  maintenancePhase?:
-    | "pending"
-    | "pruning"
-    | "migrating"
-    | "vacuuming"
-    | "cleanup"
-    | "ready"
-    | "failed";
+  maintenancePhase?: "pending" | "pruning" | "migrating" | "vacuuming" | "cleanup" | "ready" | "failed";
   /** Backend maintenance internal progress (0..1), shown as text detail. */
   maintenanceProgress?: number | null;
   /** Backend maintenance reclaimed bytes (current), shown as text detail. */
@@ -227,7 +221,7 @@ export interface DataInfo {
 }
 
 export interface InspectDataDirResult {
-  /** Whether the directory contains recognizable OpenFic data. */
+  /** Whether the directory contains recognizable NovelForge data. */
   valid: boolean;
   /** Whether the inspected directory overlaps an application or supplied installation directory. */
   nestedWithInstallDir: boolean;

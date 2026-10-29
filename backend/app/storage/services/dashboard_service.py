@@ -54,20 +54,6 @@ class DashboardStatsResult:
     options: DashboardFilterOptionsResult
 
 
-def _to_utc(value: datetime | None) -> datetime | None:
-    """把客户端传入的时间归一化为带时区的 UTC。
-
-    历史版本的前端会传「无时区的裸本地时间」，而 agent_audit_logs.created_at 是
-    UTCDateTime 列，绑定裸时间会抛 ValueError 导致整个统计接口 500。
-    这里对缺失时区的输入按 UTC 补齐，保证接口不再崩溃。
-    """
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
-
-
 def build_filters(
     project_id: str | None = None,
     model_provider: str | None = None,
@@ -91,10 +77,21 @@ def build_filters(
         status=status,
         task_id=task_id,
         session_id=session_id,
-        start_at=_to_utc(start_at),
-        end_at=_to_utc(end_at),
+        # Older SQLModel versions strip offsets when binding SQLite datetimes.
+        # Normalize first so offset-bearing clients also filter the correct UTC range.
+        # 历史版本前端会传「无时区的裸本地时间」，UTCDateTime 绑定裸时间会抛 ValueError
+        # 导致整个统计接口 500，这里按 UTC 补齐。
+        start_at=_as_utc(start_at),
+        end_at=_as_utc(end_at),
         search=search.strip() if search else None,
     )
+
+
+def _as_utc(value: datetime | None) -> datetime | None:
+    """Normalize boundaries; internal legacy naive values represent UTC."""
+    if value is None:
+        return None
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
 async def get_stats_dashboard(

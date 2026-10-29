@@ -4,7 +4,7 @@ Retrieval subsystem exports.
 """
 
 from app.retrieval.engine import LanceDBRetrievalEngine, RetrievalQueryBuilder
-from app.retrieval.service import OpenFicRetrievalService
+from app.retrieval.service import NovelForgeRetrievalService
 from app.retrieval.types import (
     BatchIndexResult,
     ChunkSearchResult,
@@ -23,7 +23,7 @@ __all__ = [
     "IndexDescription",
     "IndexDocument",
     "LanceDBRetrievalEngine",
-    "OpenFicRetrievalService",
+    "NovelForgeRetrievalService",
     "RetrievalIndexContract",
     "RetrievalQueryBuilder",
 ]

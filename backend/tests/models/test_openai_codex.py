@@ -46,7 +46,7 @@ def test_openai_codex_authorization_url_uses_loopback_and_dynamic_registration()
         nonce="nonce-value",
         code_challenge="challenge-value",
         ext_agent_host_id="urn:uuid:11111111-1111-4111-8111-111111111111",
-        agent_name_hint="OpenFic",
+        agent_name_hint="NovelForge",
     )
 
     parsed = httpx.URL(url)
@@ -55,7 +55,7 @@ def test_openai_codex_authorization_url_uses_loopback_and_dynamic_registration()
     assert parsed.host == "auth.openai.com"
     assert parsed.path == "/api/accounts/authorize"
     assert params["client_id"] == "dynamic_agent_client"
-    assert params["agent_name_hint"] == "OpenFic"
+    assert params["agent_name_hint"] == "NovelForge"
     assert params["redirect_uri"].startswith("http://127.0.0.1:")
     assert "localhost" not in params["redirect_uri"]
     assert params["scope"] == " ".join(OPENAI_CODEX_SCOPES)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-OpenFic retrieval wrapper service.
+NovelForge retrieval wrapper service.
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ class IndexNotReadyError(ValueError):
     """检索索引尚未完成构建，暂时不能执行查询。"""
 
 
-class OpenFicRetrievalService:
+class NovelForgeRetrievalService:
     def __init__(self, *, base_dir: Path | None = None):
         self.base_dir = base_dir or (settings.static_dir / "lancedb")
 

@@ -35,7 +35,7 @@ from app.retrieval.chapter_index import (
     resolve_embedding_model_ref_id,
 )
 from app.retrieval.index_status import commit_and_emit_index_status
-from app.retrieval.service import OpenFicRetrievalService
+from app.retrieval.service import NovelForgeRetrievalService
 from app.settings import settings
 from app.storage.repos import retrieval_chapter_index_state_repo, setting_repo
 
@@ -172,7 +172,7 @@ async def _cleanup_incomplete_items(
                 chapter_document_id(chapter_id)
             )
 
-    retrieval_service = OpenFicRetrievalService()
+    retrieval_service = NovelForgeRetrievalService()
     for index_key, document_ids in document_ids_by_index_key.items():
         try:
             await retrieval_service.delete_documents(

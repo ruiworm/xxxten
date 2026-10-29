@@ -351,7 +351,7 @@ class OpenAICodexChatModel(BaseChatModel):
             payload["tools"] = [{
                 "type": "namespace",
                 "name": "openfic",
-                "description": "OpenFic writing and context tools",
+                "description": "NovelForge writing and context tools",
                 "tools": tools,
             }]
         if tool_choice is not None:

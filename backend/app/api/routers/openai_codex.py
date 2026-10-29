@@ -87,7 +87,7 @@ async def _take_transaction(state: str) -> OpenAICodexOAuthTransaction | None:
 def _callback_page(*, success: bool, message: str) -> HTMLResponse:
     safe_message = escape(message, quote=True)
     html = f"""<!doctype html>
-<html><head><meta charset="utf-8"><title>OpenFic OpenAI Codex</title></head>
+<html><head><meta charset="utf-8"><title>NovelForge OpenAI Codex</title></head>
 <body><p>{safe_message}</p>
 </body></html>"""
     return HTMLResponse(

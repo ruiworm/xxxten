@@ -54,7 +54,7 @@ const hook = registerHooks({
     return nextResolve(specifier, context);
   },
 });
-const { ensureOpenFicRuntime } = await import("../../dist/main/runtime/openfic.js");
+const { ensureNovelForgeRuntime } = await import("../../dist/main/runtime/openfic.js");
 hook.deregister();
 
 test("uv and the pinned backend use the preferred PyPI index, then retry on the other index", async () => {
@@ -65,7 +65,7 @@ test("uv and the pinned backend use the preferred PyPI index, then retry on the 
     await mkdir(scripts, { recursive: true });
     await writeFile(path.join(scripts, process.platform === "win32" ? "python.exe" : "python"), "");
     await writeFile(path.join(scripts, process.platform === "win32" ? "openfic.exe" : "openfic"), "");
-    await ensureOpenFicRuntime({ pythonPath: "portable-python", wasReplaced: false }, directory, "0.12.1", () => {});
+    await ensureNovelForgeRuntime({ pythonPath: "portable-python", wasReplaced: false }, directory, "0.12.1", () => {});
     assert.equal(state.installs.length, 4);
     const [uvMirror, uvDefault, backendMirror, backendDefault] = state.installs;
     for (const command of [uvMirror, backendMirror]) assert.equal(command.env.PIP_INDEX_URL, "https://mirrors.cernet.edu.cn/pypi/web/simple/");

@@ -2,12 +2,7 @@ import { app, type WebContents } from "electron";
 import { stat } from "node:fs/promises";
 import { IpcChannels, type SetupProgressEvent } from "../../shared/ipc.js";
 import { describeDownloadProgress, ensurePortablePython, inspectPortablePython, resolveRuntimeDir } from "./python.js";
-import {
-  ensureOpenFicRuntime,
-  inspectOpenFicRuntime,
-  resolveVenvPythonPath,
-  startLocalOpenFicBackend,
-} from "./openfic.js";
+import { ensureNovelForgeRuntime, inspectNovelForgeRuntime, resolveVenvPythonPath, startLocalNovelForgeBackend } from "./openfic.js";
 import type { BackendProcessHandle } from "../process.js";
 import type { StartupProgressTracker } from "../startup-progress.js";
 import { appendLog, getLogPath } from "../logging.js";
@@ -55,7 +50,7 @@ export async function installLocalRuntime(webContents: WebContents, installDir: 
       },
     );
 
-    await ensureOpenFicRuntime(python, runtimeDir, app.getVersion(), (step, message) => beginStep(step, message));
+    await ensureNovelForgeRuntime(python, runtimeDir, app.getVersion(), (step, message) => beginStep(step, message));
 
     if (currentStep) markDone(webContents, currentStep);
     appendLog("runtime", "运行环境安装完成");
@@ -87,7 +82,7 @@ export async function inspectLocalRuntime(installDir: string): Promise<LocalRunt
   const python = await inspectPortablePython(runtimeDir);
   if (!python.complete) return { status: "incomplete", message: python.message };
 
-  const openfic = await inspectOpenFicRuntime(runtimeDir, app.getVersion());
+  const openfic = await inspectNovelForgeRuntime(runtimeDir, app.getVersion());
   if (!openfic.complete) return { status: "incomplete", message: openfic.message };
 
   return { status: "ready", message: openfic.message };
@@ -98,6 +93,7 @@ export async function startLocalBackendFromInstall(
   startupProgress?: StartupProgressTracker,
   signal?: AbortSignal,
   dataDir?: string,
+  accessKey?: string,
 ): Promise<{ handle: BackendProcessHandle; maintenanceError: string | null }> {
   throwIfAborted(signal);
   const inspection = await inspectLocalRuntime(installDir);
@@ -106,5 +102,5 @@ export async function startLocalBackendFromInstall(
   }
   throwIfAborted(signal);
   const runtimeDir = resolveRuntimeDir(installDir);
-  return startLocalOpenFicBackend(resolveVenvPythonPath(runtimeDir), app.getVersion(), startupProgress, signal, dataDir);
+  return startLocalNovelForgeBackend(resolveVenvPythonPath(runtimeDir), app.getVersion(), startupProgress, signal, dataDir, accessKey);
 }

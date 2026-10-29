@@ -113,7 +113,7 @@ async def test_openai_codex_sends_function_tools_and_returns_tool_call_chunks():
                 {
                     "type": "response.function_call_arguments.delta",
                     "item_id": "fc_1",
-                    "delta": '"OpenFic"}',
+                    "delta": '"NovelForge"}',
                 },
                 {"type": "response.completed", "response": {"id": "resp_2"}},
             ),
@@ -141,7 +141,7 @@ async def test_openai_codex_sends_function_tools_and_returns_tool_call_chunks():
     ]
     assert result.tool_calls[0]["id"] == "call_1"
     assert result.tool_calls[0]["name"] == "lookup"
-    assert result.tool_calls[0]["args"] == {"query": "OpenFic"}
+    assert result.tool_calls[0]["args"] == {"query": "NovelForge"}
     assert len(result.tool_calls) == 1
     history = _model()._build_payload([result], None)
     assert history["input"][0]["namespace"] == "openfic"
@@ -161,7 +161,7 @@ async def test_openai_codex_replays_encrypted_reasoning_in_output_order(
     }
     call = {
         "type": "function_call", "id": "fc_1", "call_id": "call_1",
-        "name": "lookup", "namespace": "openfic", "arguments": '{"query":"OpenFic"}',
+        "name": "lookup", "namespace": "openfic", "arguments": '{"query":"NovelForge"}',
         "status": "completed",
     }
     second_reasoning = {**reasoning, "id": "rs_2", "encrypted_content": "second-state"}
@@ -195,7 +195,7 @@ async def test_openai_codex_replays_encrypted_reasoning_in_output_order(
         result = await model.ainvoke([HumanMessage(content="Search")])
     assert result.additional_kwargs["responses_output"] == output
     assert result.additional_kwargs["reasoning_content"] == "Check context"
-    assert result.tool_calls[0]["args"] == {"query": "OpenFic"}
+    assert result.tool_calls[0]["args"] == {"query": "NovelForge"}
     # Exercise the same JSON round trip used when restoring persisted messages.
     restored = AIMessage.model_validate_json(result.model_dump_json())
     await model.ainvoke([

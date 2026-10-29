@@ -3,11 +3,17 @@ import { mkdir } from "node:fs/promises";
 import { registerAppScheme, handleAppProtocol, setRuntimeConfig } from "./protocol.js";
 import { getDevDataDir, isDevMode, DEV_INSTANCE_ID, startDevBackend } from "./runtime/dev-backend.js";
 import { createMainWindow } from "./windows.js";
-import { readDesktopConfig, writeDesktopConfig } from "./config.js";
+import {
+  decryptDesktopAccessKey,
+  readDesktopConfig,
+  writeDesktopConfig,
+  type StoredDesktopConfig,
+  type StoredDesktopInstance,
+} from "./config.js";
 import { registerIpc } from "./ipc.js";
 import { throwIfAborted, waitForBackend } from "./health.js";
 import { ensurePortablePython, resolveRuntimeDir } from "./runtime/python.js";
-import { ensureOpenFicRuntime, startLocalOpenFicBackend } from "./runtime/openfic.js";
+import { ensureNovelForgeRuntime, startLocalNovelForgeBackend } from "./runtime/openfic.js";
 import { forceStopBackendProcess, stopBackendProcess, type BackendProcessHandle } from "./process.js";
 import { resolveDataDir } from "./data-location.js";
 import { initializeUpdater } from "./updater.js";
@@ -117,6 +123,7 @@ async function startLocalBackend(
   dataDir: string,
   startupProgress: StartupProgressTracker,
   signal: AbortSignal,
+  accessKey?: string,
 ): Promise<string | null> {
   throwIfAborted(signal);
   const runtimeDir = resolveRuntimeDir(installDir);
@@ -159,7 +166,7 @@ async function startLocalBackend(
   }
 
   let runtimeWasUpdated = false;
-  const runtime = await ensureOpenFicRuntime(python, runtimeDir, app.getVersion(), (step, message) => {
+  const runtime = await ensureNovelForgeRuntime(python, runtimeDir, app.getVersion(), (step, message) => {
     runtimeWasUpdated = true;
     startupProgress.begin({
       step: "update-openfic",
@@ -178,25 +185,26 @@ async function startLocalBackend(
     });
   }
 
-  const { handle: backend, maintenanceError } = await startLocalOpenFicBackend(
+  const { handle: backend, maintenanceError } = await startLocalNovelForgeBackend(
     runtime.venvPythonPath,
     app.getVersion(),
     startupProgress,
     signal,
     dataDir,
+    accessKey,
   );
   setBackend(backend);
   setBackendBaseUrl(backend.baseUrl);
   return maintenanceError;
 }
 
-function getActiveInstance(config: DesktopConfig): DesktopInstance | null {
+function getActiveInstance(config: StoredDesktopConfig): StoredDesktopInstance | null {
   return config.instances.find((instance) => instance.id === config.activeInstanceId) ?? config.instances[0] ?? null;
 }
 
 async function activateInstance(
   config: DesktopConfig,
-  instance: DesktopInstance,
+  instance: StoredDesktopInstance,
   startupProgress: StartupProgressTracker,
   signal: AbortSignal,
 ): Promise<{ compatibilityWarning: string | null; maintenanceWarning: string | null }> {
@@ -236,7 +244,13 @@ async function activateInstance(
   }
 
   try {
-    const maintenanceWarning = await startLocalBackend(instance.installDir, resolveDataDir(instance), startupProgress, signal);
+    const maintenanceWarning = await startLocalBackend(
+      instance.installDir,
+      resolveDataDir(instance),
+      startupProgress,
+      signal,
+      decryptDesktopAccessKey(instance),
+    );
     return { compatibilityWarning: null, maintenanceWarning };
   } catch (error) {
     appendLog("runtime", `本地运行环境更新或启动失败：${error instanceof Error ? error.message : String(error)}`);
@@ -541,7 +555,7 @@ if (!gotLock) {
   });
 
   process.on("unhandledRejection", (reason) => {
-    writeStartupLog(`unhandledRejection: ${reason instanceof Error ? reason.stack ?? reason.message : String(reason)}`);
+    writeStartupLog(`unhandledRejection: ${reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)}`);
     captureException(reason);
   });
 }

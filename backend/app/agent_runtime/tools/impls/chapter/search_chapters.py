@@ -31,7 +31,7 @@ from app.retrieval.chapter_index import (
     get_index_settings,
     resolve_embedding_model_ref_id,
 )
-from app.retrieval.service import IndexNotReadyError, OpenFicRetrievalService
+from app.retrieval.service import IndexNotReadyError, NovelForgeRetrievalService
 from app.retrieval.types import ChunkSearchResult
 from app.settings import settings
 from app.storage.database import create_session
@@ -330,7 +330,7 @@ class SearchChaptersTool(AgentTool):
                         session, index_config.rerank_model_ref_id
                     )
                 final_limit = SEARCH_CHAPTERS_CHUNK_LIMIT
-                builder = await OpenFicRetrievalService().query(
+                builder = await NovelForgeRetrievalService().query(
                     session,
                     chapter_index_key(self.project_id),
                     query,

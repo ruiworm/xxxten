@@ -11,17 +11,10 @@ export interface ReleaseSource extends DownloadSource {
 export const RELEASE_SOURCES: readonly ReleaseSource[] = [
   {
     kind: "default",
-    url: "https://api.github.com/repos/syrizelink/OpenFic/releases/latest",
-    tagApi: (version) => `https://api.github.com/repos/syrizelink/OpenFic/releases/tags/v${encodeURIComponent(version)}`,
-    downloadBase: "https://github.com/syrizelink/OpenFic/releases/download/",
-    releasePage: (version) => `https://github.com/syrizelink/OpenFic/releases/tag/v${encodeURIComponent(version)}`,
-  },
-  {
-    kind: "mirror",
-    url: "https://api.atomgit.com/api/v5/repos/Syrize/OpenFic/releases/latest",
-    tagApi: (version) => `https://api.atomgit.com/api/v5/repos/Syrize/OpenFic/releases/v${encodeURIComponent(version)}`,
-    downloadBase: "https://atomgit.com/Syrize/OpenFic/releases/download/",
-    releasePage: (version) => `https://atomgit.com/Syrize/OpenFic/releases/v${encodeURIComponent(version)}`,
+    url: "https://api.github.com/repos/ruiworm/OpenFic/releases/latest",
+    tagApi: (version) => `https://api.github.com/repos/ruiworm/OpenFic/releases/tags/v${encodeURIComponent(version)}`,
+    downloadBase: "https://github.com/ruiworm/OpenFic/releases/download/",
+    releasePage: (version) => `https://github.com/ruiworm/OpenFic/releases/tag/v${encodeURIComponent(version)}`,
   },
 ];
 
@@ -54,7 +47,7 @@ export async function loadReleaseSnapshot(
   const channelFile = `latest-win-${architecture}.yml`;
   const metadataUrl = new URL(channelFile, baseUrl);
   const info = parseUpdateInfo(await readText(metadataUrl.href), channelFile, metadataUrl);
-  const installer = `OpenFic-${version}-win-${architecture}-setup.exe`;
+  const installer = `NovelForge-${version}-win-${architecture}-setup.exe`;
   if (info?.version !== version || !Array.isArray(info.files) || info.files.length !== 1) {
     throw new Error(`Invalid update metadata: ${metadataUrl.href}`);
   }

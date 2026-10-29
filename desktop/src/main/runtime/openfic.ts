@@ -3,24 +3,20 @@ import { spawn } from "node:child_process";
 import { access, mkdir, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { findFreePort } from "../ports.js";
-import {
-  abortStartingBackendProcess,
-  startBackendProcess,
-  type BackendProcessHandle,
-} from "../process.js";
+import { abortStartingBackendProcess, startBackendProcess, type BackendProcessHandle } from "../process.js";
 import { configureDefaultSystemProxy, getSystemProxyEnvironment } from "../proxy.js";
 import { throwIfAborted, waitForBackend } from "../health.js";
 import type { PortablePython, RuntimeIntegrityCheck } from "./python.js";
 import {
-  createOpenFicInstallCommand,
-  createOpenFicServeCommand,
-  createOpenFicVersionCommand,
-  resolveOpenFicCliPath,
+  createNovelForgeInstallCommand,
+  createNovelForgeServeCommand,
+  createNovelForgeVersionCommand,
+  resolveNovelForgeCliPath,
 } from "./openfic-commands.js";
 import type { StartupProgressTracker, ProgressUpdate } from "../startup-progress.js";
 import { appendLog, createLogStream } from "../logging.js";
 
-export type OpenFicRuntimeStep = "create-venv" | "install-uv" | "install-openfic";
+export type NovelForgeRuntimeStep = "create-venv" | "install-uv" | "install-openfic";
 
 const ANSI_ESCAPE_SEQUENCE = new RegExp(`${String.fromCharCode(0x1b)}\\[[0-9;]*[A-Za-z]`, "g");
 const DEFAULT_PYPI_INDEX_URL = "https://pypi.org/simple/";
@@ -101,7 +97,6 @@ interface PypiIndexProbe {
   elapsedMs: number;
   hostsBackendPackage: boolean;
 }
-
 function getVenvDir(runtimeDir: string): string {
   return path.join(runtimeDir, "venv");
 }
@@ -133,11 +128,7 @@ async function pathExists(filePath: string): Promise<boolean> {
   }
 }
 
-function forwardLines(
-  stream: NodeJS.ReadableStream | null,
-  logStream: NodeJS.WritableStream,
-  onLine?: (line: string) => void,
-): void {
+function forwardLines(stream: NodeJS.ReadableStream | null, logStream: NodeJS.WritableStream, onLine?: (line: string) => void): void {
   if (!stream) return;
 
   let buffer = "";
@@ -224,10 +215,15 @@ async function buildPypiEnvironment(indexUrl: string): Promise<NodeJS.ProcessEnv
     pip_index_url: indexUrl,
     uv_index_url: indexUrl,
     uv_default_index: indexUrl,
+    // Do not let an inherited additional index silently bypass the selected source.
+    PIP_EXTRA_INDEX_URL: "",
+    UV_EXTRA_INDEX_URL: "",
+    pip_extra_index_url: "",
+    uv_extra_index_url: "",
   };
 }
 
-async function getPypiEnvironmentsBySpeed(expectedVersion: string): Promise<NodeJS.ProcessEnv[]> {
+async function getOrderedPypiEnvironments(expectedVersion: string): Promise<NodeJS.ProcessEnv[]> {
   await configureDefaultSystemProxy();
   const probes = await Promise.all(
     [DEFAULT_PYPI_INDEX_URL, TSINGHUA_PYPI_INDEX_URL, ALIYUN_PYPI_INDEX_URL, USTC_PYPI_INDEX_URL].map((indexUrl) => probePypiIndex(indexUrl, expectedVersion)),
@@ -375,7 +371,7 @@ async function runUvInstallWithSystemCertsRetry(
   uvPath: string,
   args: string[],
   cwd: string,
-  onProgress: (step: OpenFicRuntimeStep, message: string) => void,
+  onProgress: (step: NovelForgeRuntimeStep, message: string) => void,
   environment?: NodeJS.ProcessEnv,
 ): Promise<void> {
   try {
@@ -383,13 +379,7 @@ async function runUvInstallWithSystemCertsRetry(
   } catch (error) {
     if (error instanceof Error && error.message.includes(UV_SYSTEM_CERTS_HINT)) {
       appendLog("runtime", "检测到 TLS 证书错误，使用 --system-certs 重试");
-      await run(
-        uvPath,
-        ["--system-certs", ...args],
-        cwd,
-        (line) => onProgress("install-openfic", line),
-        environment,
-      );
+      await run(uvPath, ["--system-certs", ...args], cwd, (line) => onProgress("install-openfic", line), environment);
       return;
     }
     throw error;
@@ -416,10 +406,7 @@ async function runInstallWithIndexFallback(
   throw lastError;
 }
 
-export async function inspectOpenFicRuntime(
-  runtimeDir: string,
-  expectedVersion: string,
-): Promise<RuntimeIntegrityCheck> {
+export async function inspectNovelForgeRuntime(runtimeDir: string, expectedVersion: string): Promise<RuntimeIntegrityCheck> {
   const venvPythonPath = getVenvPythonPath(runtimeDir);
   if (!(await pathExists(venvPythonPath))) {
     return { complete: false, message: "未找到 Python 虚拟环境" };
@@ -433,7 +420,7 @@ export async function inspectOpenFicRuntime(
     return { complete: false, message: "uv 不存在或不可用" };
   }
 
-  const versionCommand = createOpenFicVersionCommand(venvPythonPath);
+  const versionCommand = createNovelForgeVersionCommand(venvPythonPath);
   const installedVersion = await readOutput(versionCommand.command, versionCommand.args, runtimeDir);
   if (installedVersion !== expectedVersion) {
     return {
@@ -441,7 +428,7 @@ export async function inspectOpenFicRuntime(
       message: installedVersion ? "NovelForge 后端版本不匹配" : "未找到 NovelForge 后端",
     };
   }
-  const openFicCliPath = resolveOpenFicCliPath(venvPythonPath);
+  const openFicCliPath = resolveNovelForgeCliPath(venvPythonPath);
   if (!(await pathExists(openFicCliPath)) || !(await succeeds(openFicCliPath, ["--help"], runtimeDir))) {
     return { complete: false, message: "NovelForge 命令行程序缺失或不可用" };
   }
@@ -449,17 +436,17 @@ export async function inspectOpenFicRuntime(
   return { complete: true, message: "NovelForge 运行环境已完整安装" };
 }
 
-export async function ensureOpenFicRuntime(
+export async function ensureNovelForgeRuntime(
   python: PortablePython,
   runtimeDir: string,
   expectedVersion: string,
-  onProgress: (step: OpenFicRuntimeStep, message: string) => void,
+  onProgress: (step: NovelForgeRuntimeStep, message: string) => void,
 ): Promise<{ uvPath: string; venvPythonPath: string }> {
   const venvDir = getVenvDir(runtimeDir);
   const venvPythonPath = getVenvPythonPath(runtimeDir);
   const uvPath = getUvPath(runtimeDir);
   let pypiEnvironments: Promise<NodeJS.ProcessEnv[]> | null = null;
-  const getPypiEnvironments = () => (pypiEnvironments ??= getPypiEnvironmentsBySpeed(expectedVersion));
+  const getPypiEnvironments = () => (pypiEnvironments ??= getOrderedPypiEnvironments(expectedVersion));
 
   appendLog("runtime", `开始检查 NovelForge 运行环境：${runtimeDir}`);
   await mkdir(runtimeDir, { recursive: true });
@@ -469,8 +456,7 @@ export async function ensureOpenFicRuntime(
     await rm(venvDir, { recursive: true, force: true });
   }
 
-  const venvIsUsable =
-    (await pathExists(venvPythonPath)) && Boolean(await readOutput(venvPythonPath, ["--version"], runtimeDir));
+  const venvIsUsable = (await pathExists(venvPythonPath)) && Boolean(await readOutput(venvPythonPath, ["--version"], runtimeDir));
   if (!venvIsUsable) {
     appendLog("runtime", "虚拟环境不存在或不可用，开始创建");
     await rm(venvDir, { recursive: true, force: true });
@@ -494,11 +480,10 @@ export async function ensureOpenFicRuntime(
     );
   }
 
-  const versionCommand = createOpenFicVersionCommand(venvPythonPath);
+  const versionCommand = createNovelForgeVersionCommand(venvPythonPath);
   const installedVersion = await readOutput(versionCommand.command, versionCommand.args, runtimeDir);
-  const openFicCliPath = resolveOpenFicCliPath(venvPythonPath);
-  const openFicCliIsUsable =
-    (await pathExists(openFicCliPath)) && (await succeeds(openFicCliPath, ["--help"], runtimeDir));
+  const openFicCliPath = resolveNovelForgeCliPath(venvPythonPath);
+  const openFicCliIsUsable = (await pathExists(openFicCliPath)) && (await succeeds(openFicCliPath, ["--help"], runtimeDir));
   if (installedVersion !== expectedVersion || !openFicCliIsUsable) {
     appendLog(
       "runtime",
@@ -525,7 +510,7 @@ export async function ensureOpenFicRuntime(
           "runtime",
           `使用内置后端轮子安装失败，回退到包索引：${error instanceof Error ? error.message : String(error)}`,
         );
-        const installCommand = createOpenFicInstallCommand(venvPythonPath, expectedVersion, forceReinstall);
+        const installCommand = createNovelForgeInstallCommand(venvPythonPath, expectedVersion, forceReinstall);
         await runInstallWithIndexFallback(packageIndexEnvironments, (environment) =>
           runUvInstallWithSystemCertsRetry(uvPath, installCommand.args, runtimeDir, onProgress, environment),
         );
@@ -535,7 +520,7 @@ export async function ensureOpenFicRuntime(
         "runtime",
         `安装包内未找到内置后端文件（${getBundledWheelDir()}/openfic-*.whl），改为从 Python 包索引安装后端。`,
       );
-      const installCommand = createOpenFicInstallCommand(venvPythonPath, expectedVersion, forceReinstall);
+      const installCommand = createNovelForgeInstallCommand(venvPythonPath, expectedVersion, forceReinstall);
       try {
         await runInstallWithIndexFallback(packageIndexEnvironments, (environment) =>
           runUvInstallWithSystemCertsRetry(uvPath, installCommand.args, runtimeDir, onProgress, environment),
@@ -726,12 +711,13 @@ function matchStartupLogLine(line: string): ProgressUpdate | null {
   return null;
 }
 
-export async function startLocalOpenFicBackend(
+export async function startLocalNovelForgeBackend(
   venvPythonPath: string,
   expectedVersion: string,
   startupProgress?: StartupProgressTracker,
   signal?: AbortSignal,
   dataDir?: string,
+  accessKey?: string,
 ): Promise<{ handle: BackendProcessHandle; maintenanceError: string | null }> {
   throwIfAborted(signal);
   startupProgress?.begin({
@@ -742,7 +728,7 @@ export async function startLocalOpenFicBackend(
   });
   const port = await findFreePort();
   throwIfAborted(signal);
-  const command = createOpenFicServeCommand(venvPythonPath, port);
+  const command = createNovelForgeServeCommand(venvPythonPath, port);
   const proxyEnvironment = await getSystemProxyEnvironment("https://pypi.org/");
   throwIfAborted(signal);
   let latestMilestone: ProgressUpdate | null = null;
@@ -752,7 +738,10 @@ export async function startLocalOpenFicBackend(
     args: command.args,
     port,
     dataDir,
-    environment: proxyEnvironment,
+    environment: {
+      ...proxyEnvironment,
+      OPENFIC_AUTH_PASSWORD: accessKey ?? "",
+    },
     onOutputLine: (line) => {
       const progress = matchStartupLogLine(line);
       if (!progress) return;

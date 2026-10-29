@@ -37,7 +37,7 @@ function licenseFile(): string {
   return join(app.getPath("userData"), "license.txt");
 }
 
-// 激活窗口 HTML，风格对齐 OpenFic：黑白灰、圆角 10px、衬线字体
+// 激活窗口 HTML，风格对齐 NovelForge：黑白灰、圆角 10px、衬线字体
 const ACTIVATION_HTML = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
