@@ -8,7 +8,7 @@ directories:
 publish:
   provider: github
   owner: ruiworm
-  repo: NovelForge
+  repo: xxxten
   releaseType: release
 
 electronLanguages:

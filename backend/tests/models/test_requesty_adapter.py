@@ -13,7 +13,7 @@ from app.models.services.model_provider_service import (
 
 _BASE_URL = "https://router.requesty.ai/v1"
 _APP_ATTRIBUTION_HEADERS = {
-    "HTTP-Referer": "https://github.com/ruiworm/OpenFic",
+    "HTTP-Referer": "https://github.com/ruiworm/xxxten",
     "X-Title": "NovelForge",
 }
 

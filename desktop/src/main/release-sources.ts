@@ -11,10 +11,10 @@ export interface ReleaseSource extends DownloadSource {
 export const RELEASE_SOURCES: readonly ReleaseSource[] = [
   {
     kind: "default",
-    url: "https://api.github.com/repos/ruiworm/OpenFic/releases/latest",
-    tagApi: (version) => `https://api.github.com/repos/ruiworm/OpenFic/releases/tags/v${encodeURIComponent(version)}`,
-    downloadBase: "https://github.com/ruiworm/OpenFic/releases/download/",
-    releasePage: (version) => `https://github.com/ruiworm/OpenFic/releases/tag/v${encodeURIComponent(version)}`,
+    url: "https://api.github.com/repos/ruiworm/xxxten/releases/latest",
+    tagApi: (version) => `https://api.github.com/repos/ruiworm/xxxten/releases/tags/v${encodeURIComponent(version)}`,
+    downloadBase: "https://github.com/ruiworm/xxxten/releases/download/",
+    releasePage: (version) => `https://github.com/ruiworm/xxxten/releases/tag/v${encodeURIComponent(version)}`,
   },
 ];
 

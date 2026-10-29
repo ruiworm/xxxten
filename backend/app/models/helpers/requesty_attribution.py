@@ -1,6 +1,6 @@
 """Requesty application attribution settings."""
 
-REQUESTY_APP_URL = "https://github.com/ruiworm/OpenFic"
+REQUESTY_APP_URL = "https://github.com/ruiworm/xxxten"
 REQUESTY_APP_TITLE = "NovelForge"
 
 

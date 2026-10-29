@@ -79,7 +79,7 @@ openfic serve
 
 ### 🖥桌面应用
 
-前往 [Release Page](https://github.com/ruiworm/OpenFic/releases) 下载桌面应用，在你的系统上原生运行，而无需额外步骤。
+前往 [Release Page](https://github.com/ruiworm/xxxten/releases) 下载桌面应用，在你的系统上原生运行，而无需额外步骤。
 
 ## 贡献
 
