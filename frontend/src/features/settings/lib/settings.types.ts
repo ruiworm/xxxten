@@ -81,7 +81,6 @@ export interface Settings {
   autoPruneToolOutputs: boolean;
   pruneProtectedTokens: number;
   pruneMinimumTokens: number;
-  telemetryEnabled: boolean;
   editorAutoIndent: boolean;
   editorAutoConvertPunctuation: boolean;
   editorAutoPairSymbols: boolean;
@@ -147,7 +146,6 @@ export interface SettingsResponse {
   auto_prune_tool_outputs: boolean;
   prune_protected_tokens: number;
   prune_minimum_tokens: number;
-  telemetry_enabled: boolean;
   editor_auto_indent?: boolean;
   editor_auto_convert_punctuation?: boolean;
   editor_auto_pair_symbols?: boolean;
@@ -214,7 +212,6 @@ export interface SettingsUpdateRequest {
   auto_prune_tool_outputs?: boolean;
   prune_protected_tokens?: number;
   prune_minimum_tokens?: number;
-  telemetry_enabled?: boolean;
   editor_auto_indent?: boolean;
   editor_auto_convert_punctuation?: boolean;
   editor_auto_pair_symbols?: boolean;

@@ -21,6 +21,7 @@ import {
   Heading4,
   Heading5,
   Heading6,
+  Highlighter,
   IndentDecrease,
   IndentIncrease,
   Italic,
@@ -73,6 +74,8 @@ export interface EditorToolbarProps {
   toolbarPrefix?: React.ReactNode;
   showMarkdownTools?: boolean;
   showChapterTools?: boolean;
+  /** 是否显示正文高亮按钮（仅纯文本正文编辑器支持） */
+  showHighlight?: boolean;
 }
 
 interface ToolbarButtonProps {
@@ -251,6 +254,7 @@ export function EditorToolbar({
   extraActions,
   toolbarPrefix,
   showMarkdownTools = false,
+  showHighlight = false,
   showChapterTools = false,
 }: EditorToolbarProps) {
   const { t } = useTranslation();
@@ -422,7 +426,7 @@ export function EditorToolbar({
     if (scrollContent) resizeObserver.observe(scrollContent);
 
     return () => resizeObserver.disconnect();
-  }, [editor, showChapterTools, showMarkdownTools, updateLeftScrollState]);
+  }, [editor, showChapterTools, showMarkdownTools, showHighlight, updateLeftScrollState]);
 
   const handleToolbarWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
     const scrollArea = event.currentTarget;
@@ -897,12 +901,30 @@ export function EditorToolbar({
                   />
                 </>
               )}
+              {showHighlight && (
+                <ToolbarButton
+                  icon={<Highlighter size={18} />}
+                  label={t(
+                    editor.isActive("editorHighlight")
+                      ? "editor.removeHighlight"
+                      : "editor.highlight",
+                  )}
+                  disabled={
+                    isAgentLocked || !editor.can().chain().focus().toggleEditorHighlight().run()
+                  }
+                  active={editor.isActive("editorHighlight")}
+                  onClick={() =>
+                    runEditorAction(() => editor.chain().focus().toggleEditorHighlight().run())
+                  }
+                />
+              )}
               <Flex
                 className="editor-toolbar__right"
                 gap="1"
                 align="center"
               >
-                {(showMarkdownTools || showChapterTools) && leftScrollState.hasOverflow && (
+                {(showMarkdownTools || showChapterTools || showHighlight) &&
+                  leftScrollState.hasOverflow && (
                   <Separator
                     className="editor-toolbar__divider"
                     orientation="vertical"

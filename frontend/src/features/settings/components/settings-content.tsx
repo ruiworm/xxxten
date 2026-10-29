@@ -49,7 +49,6 @@ import {
 } from "../lib/settings-route";
 import type { Settings, SettingsUpdateRequest, ThemeMode } from "../lib/settings.types";
 import { AudioSettings } from "./audio-settings";
-import { TunnelsSettings } from "./tunnels-settings";
 
 const MotionBox = motion.create(Box);
 
@@ -86,7 +85,6 @@ const CATEGORY_TITLE_KEY_MAP: Record<SettingsCategory, string> = {
   editor: "settings.editor",
   notifications: "settings.notifications",
   connections: "settings.connections",
-  tunnels: "settings.tunnels",
   models: "settings.models",
   index: "settings.index",
   session: "settings.session",
@@ -286,7 +284,6 @@ export function SettingsContent({
     activeCategory === "editor" ||
     activeCategory === "notifications" ||
     activeCategory === "connections" ||
-    activeCategory === "tunnels" ||
     activeCategory === "models" ||
     activeCategory === "index" ||
     activeCategory === "session" ||
@@ -471,7 +468,6 @@ export function SettingsContent({
                 isAgentSettingsLockLoading={isAgentSettingsLockLoading}
               />
             ) : null}
-            {activeCategory === "tunnels" ? <TunnelsSettings /> : null}
             {activeCategory === "models" ? (
               <ModelsSettings
                 activeTab={activeModelTab}

@@ -7,7 +7,6 @@ import {
   Database,
   FileText,
   Globe,
-  Network,
   MessagesSquare,
   Timer,
   Palette,
@@ -27,7 +26,6 @@ export type SettingsCategory =
   | "editor"
   | "notifications"
   | "connections"
-  | "tunnels"
   | "models"
   | "index"
   | "session"
@@ -123,12 +121,6 @@ export const SETTINGS_CATEGORY_ITEMS: SettingsCategoryItem[] = [
     id: "agents",
     icon: <Bot size={16} />,
     labelKey: "settings.agents",
-  },
-  {
-    id: "tunnels",
-    icon: <Network size={16} />,
-    labelKey: "settings.tunnels",
-    badgeKey: "settings.experimental",
   },
   {
     id: "advanced",

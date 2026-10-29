@@ -60,7 +60,6 @@ async def test_lifespan_refreshes_catalog_in_background_and_cancels_on_shutdown(
     monkeypatch.setattr(main, "_reset_task_running_state", reset_task_state)
     monkeypatch.setattr(main, "_reset_interrupted_child_run_state", reset_task_state)
     monkeypatch.setattr(main, "_reset_active_revision_state", reset_task_state)
-    monkeypatch.setattr(main, "_load_telemetry_enabled", do_nothing)
     monkeypatch.setattr(main, "_seed_builtin_models", do_nothing)
     monkeypatch.setattr(main, "init_checkpointer", do_nothing)
     monkeypatch.setattr(main, "_cleanup_unreachable_checkpoints", do_nothing)
@@ -214,7 +213,7 @@ async def test_checkpoint_restore_failure_is_not_swallowed(monkeypatch: pytest.M
 
 
 async def test_lifespan_releases_resources_when_checkpoint_startup_fails(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ("init_db", "_load_telemetry_enabled", "_seed_builtin_models", "load_audit_details_persistence"):
+    for name in ("init_db", "_seed_builtin_models", "load_audit_details_persistence"):
         monkeypatch.setattr(main, name, AsyncMock())
     for name in ("_reset_task_running_state", "_reset_active_revision_state", "_reset_interrupted_child_run_state"):
         monkeypatch.setattr(main, name, AsyncMock(return_value=0))

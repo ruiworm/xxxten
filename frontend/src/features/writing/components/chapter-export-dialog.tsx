@@ -28,6 +28,7 @@ import { subscribeBackgroundEvents } from "@/lib/background-socket";
 import type { ChapterExport, ChapterExportFormat } from "@/lib/chapter-export.types";
 import type { Chapter, VolumeWithChapters } from "@/lib/chapter.types";
 import { openDesktopFolder } from "@/lib/desktop-appearance-bridge";
+import { stripHighlightDelimiters } from "@/lib/html-utils";
 import { getSocketConnectionStatus, subscribeSocketConnectionStatus } from "@/lib/socket-client";
 
 import {
@@ -532,7 +533,9 @@ export function ChapterExportDialog({
                   >
                     {t(`${EXPORT_I18N_KEY}.previewWords`, { count: previewChapter.wordCount })}
                   </Text>
-                  <div className="chapter-export-preview-body">{previewChapter.content}</div>
+                  <div className="chapter-export-preview-body">
+                    {stripHighlightDelimiters(previewChapter.content)}
+                  </div>
                 </article>
               ) : (
                 <Flex

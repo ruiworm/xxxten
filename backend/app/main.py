@@ -48,9 +48,7 @@ from app.api.routers import (
     projects,
     prompt_chains,
     retrieval_index,
-    runtime_config,
     settings,
-    tunnels,
     skill_reference_docs,
     skills,
     tasks,
@@ -58,18 +56,10 @@ from app.api.routers import (
     world_info,
     world_info_entries,
 )
-from app.tunnels import TUNNEL_STATUS_EVENT, TunnelManager
 from app.auth import AuthMiddleware, AuthService
 from app.audit import start_audit_queue, stop_audit_queue
 from app.agent_runtime.persistence.child_runs import cancel_interrupted_child_runs
 from app.audit.queue import load_audit_details_persistence
-from app.telemetry import (
-    SETTING_KEY_TELEMETRY_ENABLED,
-    install_telemetry_sink,
-    parse_telemetry_enabled,
-    set_telemetry_enabled,
-    shutdown as shutdown_telemetry,
-)
 from app.agent_runtime.runner.checkpointer import (
     checkpoint_free_page_bytes,
     cleanup_unreachable_checkpoints,
@@ -97,9 +87,9 @@ from app.models.builtin import seed_builtin_models
 from app.models.catalog import ModelProviderCatalogService
 from app.maintenance import maintenance_state
 from app.settings import settings as app_settings
-from app.socket import emit, init_socketio
+from app.socket import init_socketio
 from app.storage.database import close_db, create_session, init_db, vacuum_database_if_needed
-from app.storage.repos import revision_repo, setting_repo
+from app.storage.repos import revision_repo
 from app.storage.services import task_service
 from app.storage.services.revision_content_backfill import backfill_revision_content_blobs
 from app.storage.services.revision_service import cleanup_orphaned_revision_data
@@ -109,10 +99,6 @@ ANSI_BOLD = "\033[1m"
 ANSI_GREEN = "\033[32m"
 ANSI_BLUE = "\033[34m"
 ANSI_RESET = "\033[0m"
-
-
-async def emit_tunnel_status(snapshot: dict[str, object]) -> None:
-    await emit(TUNNEL_STATUS_EVENT, snapshot)
 
 
 def _resolve_frontend_dist_dir() -> Path:
@@ -172,17 +158,6 @@ async def _reset_interrupted_child_run_state() -> int:
         cancelled = await cancel_interrupted_child_runs(session)
         await session.commit()
         return cancelled
-    finally:
-        await session.close()
-
-
-async def _load_telemetry_enabled() -> None:
-    session = await create_session()
-    try:
-        setting = await setting_repo.get_by_key(session, SETTING_KEY_TELEMETRY_ENABLED)
-        set_telemetry_enabled(
-            parse_telemetry_enabled(setting.value if setting else None)
-        )
     finally:
         await session.close()
 
@@ -658,7 +633,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         f"backend={app_settings.database_backend}"
     )
     await init_db()
-    await _load_telemetry_enabled()
     cleared_tasks = await _reset_task_running_state()
     if cleared_tasks:
         logger.warning(f"已重置 {cleared_tasks} 个遗留的运行中任务状态")
@@ -691,7 +665,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         logger.info(f"Shutting down {app_settings.app_name}")
-        await app.state.tunnel_manager.stop()
         if not catalog_refresh_task.done():
             catalog_refresh_task.cancel()
         with suppress(asyncio.CancelledError):
@@ -710,7 +683,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await app.state.catalog_icon_proxy_service.aclose()
         await close_checkpointer()
         await close_db()
-        shutdown_telemetry()
 
 
 def create_app() -> FastAPI:
@@ -721,11 +693,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     app.state.auth_service = AuthService(app_settings.auth_password)
-    app.state.tunnel_manager = TunnelManager(on_status_change=emit_tunnel_status)
-    app.state.tunnel_frontend_available = (FRONTEND_DIST_DIR / "index.html").is_file()
     app.state.catalog_icon_proxy_service = model_icons.CatalogIconProxyService()
-
-    install_telemetry_sink()
 
     # CORS middleware
     app.add_middleware(
@@ -742,7 +710,6 @@ def create_app() -> FastAPI:
     # Mount routers
     app.include_router(auth.router, prefix=app_settings.api_v1_prefix)
     app.include_router(health.router, prefix=app_settings.api_v1_prefix)
-    app.include_router(runtime_config.router, prefix=app_settings.api_v1_prefix)
     app.include_router(projects.router, prefix=app_settings.api_v1_prefix)
     app.include_router(volumes.router, prefix=app_settings.api_v1_prefix)
     app.include_router(chapters.router, prefix=app_settings.api_v1_prefix)
@@ -753,7 +720,6 @@ def create_app() -> FastAPI:
     app.include_router(world_info_entries.router, prefix=app_settings.api_v1_prefix)
     app.include_router(settings.router, prefix=app_settings.api_v1_prefix)
     app.include_router(audio.router, prefix=app_settings.api_v1_prefix)
-    app.include_router(tunnels.router, prefix=app_settings.api_v1_prefix)
     app.include_router(import_router.router, prefix=app_settings.api_v1_prefix)
     app.include_router(openai_codex.router, prefix=app_settings.api_v1_prefix)
     app.include_router(model_providers.router, prefix=app_settings.api_v1_prefix)

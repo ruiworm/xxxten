@@ -9,7 +9,6 @@ import type {
   InitializeAppResult,
   MigrateDataResult,
   PingInstanceResult,
-  ReportErrorPayload,
   SaveInstanceAccessKeyRequest,
   SaveInstanceAppearanceRequest,
   SetupProgressEvent,
@@ -63,7 +62,6 @@ declare global {
       openUpdateRelease: () => Promise<void>;
       exportLogs: () => Promise<string | null>;
       logFrontendDiagnostic: (message: string) => Promise<void>;
-      reportError: (payload: ReportErrorPayload) => void;
       openProjectHome: () => Promise<void>;
       reportBug: () => Promise<void>;
       suggestFeature: () => Promise<void>;

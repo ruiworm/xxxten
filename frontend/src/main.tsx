@@ -27,7 +27,6 @@ import {
   loadConfiguredFonts,
 } from "./lib/font-utils";
 import { getOrCreateRoot } from "./lib/get-or-create-root";
-import { captureException, initErrorTelemetry } from "./lib/posthog";
 import { loadRuntimeConfig } from "./lib/runtime-config";
 import { connectSocket } from "./lib/socket-client";
 import {
@@ -423,8 +422,6 @@ function Root() {
           return;
         }
 
-        void initErrorTelemetry();
-
         const [, settings] = await Promise.all([
           withInitializationStage("health", checkHealth()),
           withInitializationStage(
@@ -520,7 +517,6 @@ function Root() {
             ) : (
               <ErrorBoundary
                 FallbackComponent={AppCrashFallback}
-                onError={(err) => captureException(err, { source: "react-render" })}
               >
                 <AppContent
                   appearance={appearance}

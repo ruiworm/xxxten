@@ -26,6 +26,19 @@ def test_chinese_volume_numbers() -> None:
     assert chapter_export_service.chinese_number(101) == "一百零一"
 
 
+def test_strip_editor_marks_removes_highlight_delimiters() -> None:
+    """编辑器高亮标记不能出现在导出稿里。"""
+    strip = chapter_export_service.strip_editor_marks
+    assert strip("这是==重点==内容") == "这是重点内容"
+    assert strip("==甲== 与 ==乙==") == "甲 与 乙"
+    assert strip("==a=b==") == "a=b"
+    assert strip("<mark>旧数据</mark>") == "旧数据"
+    # 普通等号与未闭合的标记原样保留，避免误伤正文。
+    assert strip("a == b 比较") == "a == b 比较"
+    assert strip("未闭合 ==abc") == "未闭合 ==abc"
+    assert strip("====") == "===="
+
+
 def test_expired_export_is_not_downloadable(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(chapter_export_service.settings, "chapter_exports_dir", tmp_path)
     job = BackgroundJob(

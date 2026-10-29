@@ -22,7 +22,6 @@ import {
   type MigrateDataResult,
   type PingInstanceRequest,
   type PingInstanceResult,
-  type ReportErrorPayload,
   type RestoreDataRequest,
   type SaveConfigRequest,
   type SaveInstanceAccessKeyRequest,
@@ -169,7 +168,6 @@ const desktopApi = {
     ipcRenderer.invoke(IpcChannels.logFrontendDiagnostic, {
       message,
     } satisfies LogFrontendDiagnosticRequest),
-  reportError: (payload: ReportErrorPayload): void => ipcRenderer.send(IpcChannels.reportError, payload),
   openProjectHome: (): Promise<void> => ipcRenderer.invoke(IpcChannels.openProjectHome),
   reportBug: (): Promise<void> => ipcRenderer.invoke(IpcChannels.reportBug),
   suggestFeature: (): Promise<void> => ipcRenderer.invoke(IpcChannels.suggestFeature),

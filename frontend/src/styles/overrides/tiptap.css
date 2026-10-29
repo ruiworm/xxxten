@@ -467,3 +467,18 @@
 .tiptap-editor table p {
   margin-bottom: 0;
 }
+
+/* 正文高亮（正文中存储为 ==文字==，导出 TXT 时会被服务端剥离） */
+.tiptap-editor mark.editor-highlight {
+  padding: 0 1px;
+  border-radius: 2px;
+  background-color: rgb(255 214 102 / 0.45);
+  color: inherit;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.tiptap-editor mark.editor-highlight::selection,
+.tiptap-editor mark.editor-highlight *::selection {
+  background-color: var(--accent-a5);
+}

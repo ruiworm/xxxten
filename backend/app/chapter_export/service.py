@@ -140,6 +140,20 @@ def sanitize_filename_segment(value: str, fallback: str) -> str:
     return normalized[:120] or fallback
 
 
+_HIGHLIGHT_INLINE_PATTERN = re.compile(r"==(?=\S)(.+?)(?<=\S)==")
+_MARK_TAG_PATTERN = re.compile(r"</?mark\b[^>]*>", re.IGNORECASE)
+
+
+def strip_editor_marks(text: str) -> str:
+    """剥掉编辑器里的高亮标记，导出稿只保留文字。
+
+    正文里高亮存为 `==文字==`，同时兼容历史数据里可能残留的 <mark> 标签。
+    这两者都不能出现在交给读者或出版社的 TXT 里。
+    """
+    without_tags = _MARK_TAG_PATTERN.sub("", text)
+    return _HIGHLIGHT_INLINE_PATTERN.sub(r"\1", without_tags)
+
+
 def chinese_number(value: int) -> str:
     """将正整数转换为卷标题使用的简体中文数字。"""
     if value <= 0:
@@ -433,7 +447,9 @@ async def _write_single_export(context, chapters, volumes, payload) -> dict[str,
                     elif written_count:
                         await output.write("\n\n")
 
-                    content = chapter.content.replace("\r\n", "\n").replace("\r", "\n")
+                    content = strip_editor_marks(
+                        chapter.content.replace("\r\n", "\n").replace("\r", "\n")
+                    )
                     await output.write(f"{title}\n{content}")
                     written_count += 1
 
@@ -509,7 +525,9 @@ async def _write_per_chapter_export(context, chapters, volumes, payload) -> dict
                 volume_chapter_index += 1
                 safe_title = sanitize_filename_segment(title or "未命名章节", "未命名章节")
                 filename = f"{volume_chapter_index:03d}_{safe_title}.txt"
-                content = chapter.content.replace("\r\n", "\n").replace("\r", "\n")
+                content = strip_editor_marks(
+                    chapter.content.replace("\r\n", "\n").replace("\r", "\n")
+                )
                 async with aiofiles.open(
                     volume_dir / filename, "w", encoding="utf-8-sig", newline="\n"
                 ) as output:

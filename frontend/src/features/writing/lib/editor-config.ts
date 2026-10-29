@@ -16,6 +16,7 @@ import type { EditorView } from "@tiptap/pm/view";
 import { Extension } from "@tiptap/react";
 
 import { serializeClipboardText } from "@/components/editor-clipboard";
+import { EditorHighlight } from "@/components/editor-highlight";
 import { createEditorShortcuts, type EditorShortcutCallbacks } from "@/components/editor-shortcuts";
 import { PARAGRAPH_INDENT } from "@/components/editor-toolbar-actions";
 
@@ -374,6 +375,9 @@ export function createEditorExtensions(options: EditorExtensionsOptions = {}) {
     Paragraph,
     Text,
     History,
+    // 正文唯一支持的富文本标记：高亮。正文仍按纯文本存储，
+    // 高亮在读写时与 ==文字== 互相转换，见 html-utils 的 *WithHighlights。
+    EditorHighlight,
     Placeholder.configure({
       placeholder,
     }),

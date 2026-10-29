@@ -24,7 +24,7 @@ import {
   MAX_EDITOR_CONTENT_CHARACTERS,
   MAX_EDITOR_CONTENT_LINES,
 } from "@/lib/editor-content-limits";
-import { htmlToNewlines, newlinesToHtml } from "@/lib/html-utils";
+import { htmlToNewlinesWithHighlights, newlinesToHtmlWithHighlights } from "@/lib/html-utils";
 import { createToastThrottler } from "@/lib/ui-utils";
 
 import { useAutoSave } from "../hooks/use-auto-save";
@@ -228,7 +228,7 @@ function ChapterEditorContent({
     (nextTitle: string, nextHtmlContent: string) => {
       const nextDraft = createChapterEditorDraft({
         title: nextTitle,
-        content: htmlToNewlines(nextHtmlContent),
+        content: htmlToNewlinesWithHighlights(nextHtmlContent),
       });
       const isDirty = isChapterEditorDraftDirty(lastSavedDraftRef.current, nextDraft);
       latestDraftRef.current = nextDraft;
@@ -271,7 +271,7 @@ function ChapterEditorContent({
     [isAgentLocked, openFind, openReplace, showLockedToast, t],
   );
   const initialContentRef = useRef(
-    initialDraft.content ? newlinesToHtml(initialDraft.content, true) : "",
+    initialDraft.content ? newlinesToHtmlWithHighlights(initialDraft.content, true) : "",
   );
 
   const editor = useEditor({
@@ -421,7 +421,7 @@ function ChapterEditorContent({
     }
 
     const nextTitle = chapter.title;
-    const nextContent = chapter.content ? newlinesToHtml(chapter.content, true) : "";
+    const nextContent = chapter.content ? newlinesToHtmlWithHighlights(chapter.content, true) : "";
     const currentContent = editor.getHTML();
     lastSavedDraftRef.current = createChapterEditorDraft({
       title: nextTitle,
@@ -638,6 +638,7 @@ function ChapterEditorContent({
         onOpenFind={openFind}
         onOpenReplace={openReplace}
         showChapterTools
+        showHighlight
       />
 
       <AnimatePresence>

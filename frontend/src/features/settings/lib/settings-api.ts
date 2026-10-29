@@ -90,7 +90,6 @@ export function transformSettings(raw: SettingsResponse): Settings {
     autoPruneToolOutputs: raw.auto_prune_tool_outputs ?? false,
     pruneProtectedTokens: raw.prune_protected_tokens ?? 100000,
     pruneMinimumTokens: raw.prune_minimum_tokens ?? 20000,
-    telemetryEnabled: raw.telemetry_enabled ?? true,
     editorAutoIndent: raw.editor_auto_indent ?? true,
     editorAutoConvertPunctuation: raw.editor_auto_convert_punctuation ?? false,
     editorAutoPairSymbols: raw.editor_auto_pair_symbols ?? false,

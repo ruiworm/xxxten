@@ -34,7 +34,6 @@
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
-    "posthog-node": "^5.49.1",
     "tar-stream": "^3.2.0"
   },
   "devDependencies": {
