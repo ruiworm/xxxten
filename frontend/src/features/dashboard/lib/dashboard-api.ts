@@ -1,15 +1,10 @@
 import { apiClient } from "@/lib/api-client";
 
 import type {
-  DashboardAuditRecord,
   DashboardBreakdownItem,
   DashboardFilterOptions,
   DashboardModelTimeSeriesPoint,
   DashboardQueryParams,
-  DashboardRecordList,
-  DashboardRecordPrompt,
-  DashboardRecordDetails,
-  DashboardRecordsResponse,
   DashboardStatsResponse,
   DashboardSummary,
   DashboardTimeSeriesPoint,
@@ -48,55 +43,6 @@ interface RawDashboardBreakdownItem {
   tokens_total: number;
 }
 
-interface RawDashboardAuditRecord {
-  id: string;
-  created_at: string;
-  task_id: string | null;
-  session_id: string | null;
-  project_id: string;
-  project_title: string | null;
-  chapter_id: string | null;
-  revision_id: string | null;
-  category: string;
-  operation: string;
-  model_id: string;
-  model_provider: string | null;
-  model_name: string | null;
-  tokens_input: number;
-  tokens_output: number;
-  tokens_total: number;
-  token_cache: number;
-  latency_ms: number | null;
-  first_token_ms: number | null;
-  status: string;
-  error_type: string | null;
-  error_status_code: number | null;
-  tool_calls_count: number;
-  has_request_messages: boolean;
-  has_tool_references: boolean;
-  has_output_details: boolean;
-}
-
-interface RawDashboardRecordDetails {
-  id: string;
-  error_message: string | null;
-  tool_references: string | null;
-  response_content: string | null;
-  response_tool_calls: string | null;
-}
-
-interface RawDashboardRecordPrompt {
-  id: string;
-  request_messages: string | null;
-}
-
-interface RawDashboardRecordList {
-  items: RawDashboardAuditRecord[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
 interface RawDashboardFilterOptions {
   project_ids: string[];
   model_providers: string[];
@@ -119,11 +65,6 @@ interface RawDashboardStatsResponse {
   by_model: RawDashboardBreakdownItem[];
   by_project: RawDashboardBreakdownItem[];
   options: RawDashboardFilterOptions;
-}
-
-interface RawDashboardRecordsResponse {
-  options: RawDashboardFilterOptions;
-  records: RawDashboardRecordList;
 }
 
 interface RawWritingActivitySummary {
@@ -180,53 +121,6 @@ function transformBreakdownItem(raw: RawDashboardBreakdownItem): DashboardBreakd
     label: raw.label,
     calls: raw.calls,
     tokensTotal: raw.tokens_total,
-  };
-}
-
-function transformRecord(raw: RawDashboardAuditRecord): DashboardAuditRecord {
-  return {
-    id: raw.id,
-    createdAt: raw.created_at,
-    taskId: raw.task_id,
-    sessionId: raw.session_id,
-    projectId: raw.project_id,
-    projectTitle: raw.project_title,
-    chapterId: raw.chapter_id,
-    revisionId: raw.revision_id,
-    category: raw.category,
-    operation: raw.operation,
-    modelId: raw.model_id,
-    modelProvider: raw.model_provider,
-    modelName: raw.model_name,
-    tokensInput: raw.tokens_input,
-    tokensOutput: raw.tokens_output,
-    tokensTotal: raw.tokens_total,
-    tokenCache: raw.token_cache,
-    latencyMs: raw.latency_ms,
-    firstTokenMs: raw.first_token_ms,
-    status: raw.status,
-    errorType: raw.error_type,
-    errorStatusCode: raw.error_status_code,
-    toolCallsCount: raw.tool_calls_count,
-    hasRequestMessages: raw.has_request_messages,
-    hasToolReferences: raw.has_tool_references,
-    hasOutputDetails: raw.has_output_details,
-  };
-}
-
-function transformRecordPrompt(raw: RawDashboardRecordPrompt): DashboardRecordPrompt {
-  return {
-    id: raw.id,
-    requestMessages: raw.request_messages,
-  };
-}
-
-function transformRecords(raw: RawDashboardRecordList): DashboardRecordList {
-  return {
-    items: raw.items.map(transformRecord),
-    total: raw.total,
-    page: raw.page,
-    pageSize: raw.page_size,
   };
 }
 
@@ -289,42 +183,6 @@ export async function fetchLlmDashboardStats(
   };
 }
 
-export async function fetchLlmDashboardRecords(
-  query: DashboardQueryParams,
-): Promise<DashboardRecordsResponse> {
-  const response = await apiClient.get<RawDashboardRecordsResponse>("/dashboard/llm-api/records", {
-    params: {
-      project_id: query.projectId || undefined,
-      model_provider: query.modelProvider || undefined,
-      model_id: query.modelId || undefined,
-      category: query.category || undefined,
-      operation: query.operation || undefined,
-      status: query.status || undefined,
-      task_id: query.taskId || undefined,
-      session_id: query.sessionId || undefined,
-      start_at: query.startAt || undefined,
-      end_at: query.endAt || undefined,
-      search: query.search || undefined,
-      page: query.page,
-      page_size: query.pageSize,
-      sort_by: query.sortBy,
-      sort_order: query.sortOrder,
-    },
-  });
-  const raw = response.data;
-  return {
-    options: transformOptions(raw.options),
-    records: transformRecords(raw.records),
-  };
-}
-
-export async function fetchDashboardRecordPrompt(recordId: string): Promise<DashboardRecordPrompt> {
-  const response = await apiClient.get<RawDashboardRecordPrompt>(
-    `/dashboard/llm-api/records/${recordId}/prompt`,
-  );
-  return transformRecordPrompt(response.data);
-}
-
 export async function fetchWritingDashboard(
   query: WritingDashboardQueryParams,
 ): Promise<WritingDashboardResponse> {
@@ -341,20 +199,5 @@ export async function fetchWritingDashboard(
   return {
     summary: transformWritingSummary(raw.summary),
     timeSeries: raw.time_series.map(transformWritingTimeSeriesPoint),
-  };
-}
-
-export async function fetchDashboardRecordDetails(
-  recordId: string,
-): Promise<DashboardRecordDetails> {
-  const { data } = await apiClient.get<RawDashboardRecordDetails>(
-    `/dashboard/llm-api/records/${recordId}/details`,
-  );
-  return {
-    id: data.id,
-    toolReferences: data.tool_references,
-    responseContent: data.response_content,
-    responseToolCalls: data.response_tool_calls,
-    errorMessage: data.error_message,
   };
 }

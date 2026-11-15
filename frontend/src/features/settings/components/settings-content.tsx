@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { Fragment, useState, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Spinner, toast } from "@/components";
@@ -41,7 +41,12 @@ import { SummarySettings } from "../components/summary-settings";
 import { WebSearchSettings } from "../components/web-search-settings";
 import { useAgentSettingsLock } from "../lib/agent-settings-lock";
 import { fetchAgentTools, fetchSettings, updateSettings } from "../lib/settings-api";
-import { SETTINGS_CATEGORY_ITEMS, type SettingsCategory } from "../lib/settings-categories";
+import {
+  SETTINGS_ADVANCED_CATEGORIES,
+  SETTINGS_BASIC_CATEGORIES,
+  SETTINGS_CATEGORY_ITEMS,
+  type SettingsCategory,
+} from "../lib/settings-categories";
 import {
   DEFAULT_MODEL_SETTINGS_TAB,
   DEFAULT_SETTINGS_ROUTE_CATEGORY,
@@ -623,48 +628,62 @@ export function SettingsContent({
                       className="settings-dialog-mobile-category-list"
                       role="list"
                     >
-                      {SETTINGS_CATEGORY_ITEMS.map((category) => {
+                      {SETTINGS_CATEGORY_ITEMS.map((category, index) => {
                         const Icon = category.icon;
+                        const startsAdvancedGroup =
+                          index === SETTINGS_BASIC_CATEGORIES.length &&
+                          SETTINGS_ADVANCED_CATEGORIES.length > 0;
                         return (
-                          <button
-                            key={category.id}
-                            type="button"
-                            className="settings-dialog-mobile-category-item"
-                            onClick={() => handleMobileCategorySelect(category.id)}
-                          >
-                            <Flex
-                              align="center"
-                              gap="3"
-                              className="settings-dialog-mobile-category-item-content"
+                          <Fragment key={category.id}>
+                            {startsAdvancedGroup ? (
+                              <div className="settings-dialog-mobile-category-divider">
+                                <Text
+                                  size="1"
+                                  color="gray"
+                                >
+                                  {t("settings.advancedSection")}
+                                </Text>
+                              </div>
+                            ) : null}
+                            <button
+                              type="button"
+                              className="settings-dialog-mobile-category-item"
+                              onClick={() => handleMobileCategorySelect(category.id)}
                             >
-                              <span
-                                className="settings-dialog-mobile-category-item-icon"
-                                aria-hidden="true"
-                              >
-                                {Icon}
-                              </span>
                               <Flex
                                 align="center"
-                                gap="2"
-                                className="settings-dialog-mobile-category-item-label"
+                                gap="3"
+                                className="settings-dialog-mobile-category-item-content"
                               >
-                                <Text size="2">{t(category.labelKey)}</Text>
-                                {category.badgeKey ? (
-                                  <Badge
-                                    size="1"
-                                    variant="soft"
-                                    color="green"
-                                  >
-                                    {t(category.badgeKey)}
-                                  </Badge>
-                                ) : null}
+                                <span
+                                  className="settings-dialog-mobile-category-item-icon"
+                                  aria-hidden="true"
+                                >
+                                  {Icon}
+                                </span>
+                                <Flex
+                                  align="center"
+                                  gap="2"
+                                  className="settings-dialog-mobile-category-item-label"
+                                >
+                                  <Text size="2">{t(category.labelKey)}</Text>
+                                  {category.badgeKey ? (
+                                    <Badge
+                                      size="1"
+                                      variant="soft"
+                                      color="green"
+                                    >
+                                      {t(category.badgeKey)}
+                                    </Badge>
+                                  ) : null}
+                                </Flex>
                               </Flex>
-                            </Flex>
-                            <ChevronRight
-                              size={16}
-                              className="settings-dialog-mobile-category-item-arrow"
-                            />
-                          </button>
+                              <ChevronRight
+                                size={16}
+                                className="settings-dialog-mobile-category-item-arrow"
+                              />
+                            </button>
+                          </Fragment>
                         );
                       })}
                     </Box>

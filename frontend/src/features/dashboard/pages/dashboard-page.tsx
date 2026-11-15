@@ -1,28 +1,23 @@
 import { Box } from "@radix-ui/themes";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { BarChart3, BookOpenText, ListTree } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { BarChart3, BookOpenText } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MobileAppSidebarTrigger, useAppShell } from "@/features/app-shell";
 import { useMobileSidebarSwipe } from "@/hooks/use-mobile-sidebar-swipe";
 
 import { DashboardFilters } from "../components/dashboard-filters";
-import { DashboardRecordsTab } from "../components/dashboard-records-tab";
 import { LlmDashboardTab } from "../components/llm-dashboard-tab";
 import { WritingDashboardTab } from "../components/writing-dashboard-tab";
-import {
-  fetchLlmDashboardRecords,
-  fetchLlmDashboardStats,
-  fetchWritingDashboard,
-} from "../lib/dashboard-api";
+import { fetchLlmDashboardStats, fetchWritingDashboard } from "../lib/dashboard-api";
 import { getDefaultDashboardDateRange } from "../lib/dashboard-date-range";
 import { toIsoDateTime } from "../lib/dashboard-formatters";
 import type { DashboardQueryParams, WritingDashboardQueryParams } from "../lib/dashboard.types";
 
 import "./dashboard-page.css";
 
-type DashboardTab = "writing" | "llm" | "records";
+type DashboardTab = "writing" | "llm";
 
 const defaultLlmQuery: DashboardQueryParams = {
   page: 1,
@@ -59,30 +54,15 @@ export function DashboardPage() {
   const defaultDateRange = useMemo(() => getDefaultDashboardDateRange(), []);
   const [activeTab, setActiveTab] = useState<DashboardTab>("writing");
   const [llmQuery, setLlmQuery] = useState<DashboardQueryParams>(defaultLlmQuery);
-  const [searchInput, setSearchInput] = useState("");
   const [startDate, setStartDate] = useState(defaultDateRange.startDate);
   const [endDate, setEndDate] = useState(defaultDateRange.endDate);
   const [writingYear, setWritingYear] = useState(getCurrentYear);
   const isWritingTab = activeTab === "writing";
   const isLlmTab = activeTab === "llm";
-  const isRecordsTab = activeTab === "records";
   const tabs: Array<{ value: DashboardTab; label: string; icon: typeof BookOpenText }> = [
     { value: "writing", label: t("dashboard.tabs.writing"), icon: BookOpenText },
     { value: "llm", label: t("dashboard.tabs.llm"), icon: BarChart3 },
-    { value: "records", label: t("dashboard.tabs.records"), icon: ListTree },
   ];
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const nextSearch = searchInput || undefined;
-      setLlmQuery((current) => {
-        if (current.search === nextSearch) return current;
-        return { ...current, search: nextSearch, page: 1 };
-      });
-    }, 300);
-
-    return () => window.clearTimeout(timer);
-  }, [searchInput]);
 
   const startAt = toIsoDateTime(startDate, "start");
   const endAt = toIsoDateTime(endDate, "end");
@@ -119,13 +99,6 @@ export function DashboardPage() {
     placeholderData: keepPreviousData,
   });
 
-  const { data: llmRecordsData, isFetching: isLlmRecordsFetching } = useQuery({
-    queryKey: ["dashboard", "llm-api", "records", llmDashboardQuery],
-    queryFn: () => fetchLlmDashboardRecords(llmDashboardQuery),
-    enabled: isRecordsTab,
-    placeholderData: keepPreviousData,
-  });
-
   const { data: writingHeroData } = useQuery({
     queryKey: ["dashboard", "writing", "hero", writingHeroQuery],
     queryFn: () => fetchWritingDashboard(writingHeroQuery),
@@ -144,18 +117,13 @@ export function DashboardPage() {
     enabled: isWritingTab,
   });
 
-  const llmOptions = isRecordsTab ? llmRecordsData?.options : llmStatsData?.options;
-  const totalPages = Math.max(
-    1,
-    Math.ceil((llmRecordsData?.records.total ?? 0) / llmQuery.pageSize),
-  );
+  const llmOptions = llmStatsData?.options;
 
   const updateLlmQuery = (updates: Partial<DashboardQueryParams>) => {
     setLlmQuery((current) => ({ ...current, ...updates, page: updates.page ?? 1 }));
   };
 
   const resetFilters = () => {
-    setSearchInput("");
     setStartDate(defaultDateRange.startDate);
     setEndDate(defaultDateRange.endDate);
     setWritingYear(getCurrentYear());
@@ -167,11 +135,9 @@ export function DashboardPage() {
       activeTab={activeTab}
       query={llmQuery}
       options={llmOptions}
-      searchInput={searchInput}
       startDate={startDate}
       endDate={endDate}
       updateQuery={updateLlmQuery}
-      setSearchInput={setSearchInput}
       setStartDate={setStartDate}
       setEndDate={setEndDate}
       resetFilters={resetFilters}
@@ -235,18 +201,6 @@ export function DashboardPage() {
             data={llmStatsData}
             isLoading={isLlmStatsFetching}
           />
-        ) : null}
-        {isRecordsTab ? (
-          <>
-            {filters}
-            <DashboardRecordsTab
-              data={llmRecordsData}
-              query={llmQuery}
-              totalPages={totalPages}
-              isLoading={isLlmRecordsFetching}
-              updateQuery={updateLlmQuery}
-            />
-          </>
         ) : null}
       </div>
     </Box>

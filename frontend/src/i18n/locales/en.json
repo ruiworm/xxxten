@@ -52,7 +52,6 @@
     "optional": "Optional",
     "progress": "Progress",
     "appName": "NovelForge",
-    "searchPlaceholder": "Search...",
     "noMatchingOptions": "No matching options",
     "swUpdated": "App updated. Click to refresh.",
     "refresh": "Refresh"
@@ -141,7 +140,6 @@
     "namePlaceholder": "Character name",
     "descriptionPlaceholder": "Write this character's background, history, and voice...",
     "tokenCount": "Tokens",
-    "search": "Search characters",
     "searchPlaceholder": "Search characters...",
     "searching": "Searching...",
     "searchResultSummary": "Found {{matches}} results across {{characters}} characters",
@@ -732,12 +730,7 @@
     "batchToggled": "{{count}} entries updated"
   },
   "settings": {
-    "groups": {
-      "basics": "Basics",
-      "model": "Models and connections",
-      "writing": "Writing and Agent",
-      "advanced": "Advanced"
-    },
+    "advancedSection": "Advanced settings",
     "agentSettingsLocked": "An Agent session is running, so related settings are read-only.",
     "agentSettingsLockHint": "Wait for all sessions to finish before making changes.",
     "title": "Settings",
@@ -1707,8 +1700,7 @@
     "navLabel": "Dashboard sections",
     "tabs": {
       "writing": "Writing",
-      "llm": "LLM Stats",
-      "records": "Call Records"
+      "llm": "LLM Stats"
     },
     "filters": {
       "project": "Project",
@@ -1727,8 +1719,6 @@
       "startDatePlaceholder": "Select start date",
       "endDate": "End Date",
       "endDatePlaceholder": "Select end date",
-      "search": "Search",
-      "searchPlaceholder": "Search models, operations, or error messages",
       "reset": "Reset Filters",
       "all": "All",
       "clearDate": "Clear date"

@@ -20,11 +20,11 @@ import type { ReactNode } from "react";
 
 export type SettingsCategory =
   | "general"
-  | "personalization"
   | "editor"
-  | "notifications"
   | "connections"
   | "models"
+  | "notifications"
+  | "personalization"
   | "index"
   | "session"
   | "context"
@@ -36,119 +36,117 @@ export type SettingsCategory =
   | "agents"
   | "advanced";
 
-export type SettingsCategoryGroup = "basics" | "model" | "writing" | "advanced";
-
 interface SettingsCategoryItem {
   id: SettingsCategory;
-  group: SettingsCategoryGroup;
   icon: ReactNode;
   labelKey: string;
   badgeKey?: string;
 }
 
-/** 分组顺序即侧边栏渲染顺序；分类顺序即组内顺序。 */
-export const SETTINGS_CATEGORY_GROUPS: { id: SettingsCategoryGroup; labelKey: string }[] = [
-  { id: "basics", labelKey: "settings.groups.basics" },
-  { id: "model", labelKey: "settings.groups.model" },
-  { id: "writing", labelKey: "settings.groups.writing" },
-  { id: "advanced", labelKey: "settings.groups.advanced" },
-];
-
-export const SETTINGS_CATEGORY_ITEMS: SettingsCategoryItem[] = [
+/**
+ * 普通设置：只放新用户必须碰、且不涉及技术概念的项。
+ * 侧边栏直接平铺，不做分组标题。
+ */
+export const SETTINGS_BASIC_CATEGORIES: SettingsCategoryItem[] = [
   {
     id: "general",
-    group: "basics",
     icon: <SettingsIcon size={16} />,
     labelKey: "settings.general",
   },
   {
-    id: "personalization",
-    group: "basics",
-    icon: <Palette size={16} />,
-    labelKey: "settings.personalization",
-  },
-  {
     id: "editor",
-    group: "basics",
     icon: <Type size={16} />,
     labelKey: "settings.editor",
   },
   {
-    id: "notifications",
-    group: "basics",
-    icon: <Bell size={16} />,
-    labelKey: "settings.notifications",
-  },
-  {
     id: "connections",
-    group: "model",
     icon: <Cable size={16} />,
     labelKey: "settings.connections",
   },
   {
     id: "models",
-    group: "model",
     icon: <Brain size={16} />,
     labelKey: "settings.models",
   },
   {
+    id: "notifications",
+    icon: <Bell size={16} />,
+    labelKey: "settings.notifications",
+  },
+];
+
+/**
+ * 高级设置：出现参数、阈值、检索、Agent 内部机制等概念的项全部收进这里，
+ * 侧边栏默认折叠成一个「高级设置」入口。
+ */
+export const SETTINGS_ADVANCED_CATEGORIES: SettingsCategoryItem[] = [
+  {
+    id: "personalization",
+    icon: <Palette size={16} />,
+    labelKey: "settings.personalization",
+  },
+  {
     id: "index",
-    group: "model",
     icon: <Database size={16} />,
     labelKey: "settings.index",
   },
   {
     id: "session",
-    group: "writing",
     icon: <Timer size={16} />,
     labelKey: "settings.session",
   },
   {
     id: "context",
-    group: "writing",
     icon: <MessagesSquare size={16} />,
     labelKey: "settings.context",
   },
   {
     id: "summary",
-    group: "writing",
     icon: <SummaryIcon size={16} />,
     labelKey: "settings.summary",
   },
   {
     id: "agent-tools",
-    group: "writing",
     icon: <ShieldAlert size={16} />,
     labelKey: "settings.agentTools",
   },
   {
     id: "web-search",
-    group: "writing",
     icon: <Globe size={16} />,
     labelKey: "settings.webSearch",
   },
   {
     id: "rules",
-    group: "writing",
     icon: <FileText size={16} />,
     labelKey: "settings.rules",
   },
   {
     id: "skills",
-    group: "writing",
     icon: <Package size={16} />,
     labelKey: "settings.skills",
   },
   {
     id: "agents",
-    group: "writing",
     icon: <Bot size={16} />,
     labelKey: "settings.agents",
   },
   {
     id: "advanced",
-    group: "advanced",
     icon: <SlidersHorizontal size={16} />,
     labelKey: "settings.advanced",
   },
 ];
+
+/** 全部类目，供移动端列表等顺序遍历的场景使用。 */
+export const SETTINGS_CATEGORY_ITEMS: SettingsCategoryItem[] = [
+  ...SETTINGS_BASIC_CATEGORIES,
+  ...SETTINGS_ADVANCED_CATEGORIES,
+];
+
+const ADVANCED_CATEGORY_IDS = new Set<SettingsCategory>(
+  SETTINGS_ADVANCED_CATEGORIES.map((category) => category.id),
+);
+
+export function isAdvancedCategory(category: SettingsCategory): boolean {
+  return ADVANCED_CATEGORY_IDS.has(category);
+}

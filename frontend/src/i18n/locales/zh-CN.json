@@ -732,12 +732,7 @@
     "batchToggled": "已更新 {{count}} 个条目"
   },
   "settings": {
-    "groups": {
-      "basics": "通用",
-      "model": "模型与连接",
-      "writing": "写作与 Agent",
-      "advanced": "高级"
-    },
+    "advancedSection": "高级设置",
     "agentSettingsLocked": "Agent 会话运行中，相关设置暂不可修改。",
     "agentSettingsLockHint": "请等待所有会话结束后再修改。",
     "title": "设置",
@@ -1770,8 +1765,7 @@
     "navLabel": "仪表盘分区",
     "tabs": {
       "writing": "写作",
-      "llm": "LLM 统计",
-      "records": "调用记录"
+      "llm": "LLM 统计"
     },
     "filters": {
       "project": "项目",
@@ -1790,8 +1784,6 @@
       "startDatePlaceholder": "选择开始日期",
       "endDate": "结束日期",
       "endDatePlaceholder": "选择结束日期",
-      "search": "搜索",
-      "searchPlaceholder": "搜索模型、操作或错误信息",
       "reset": "重置筛选",
       "all": "全部",
       "clearDate": "清除日期"
