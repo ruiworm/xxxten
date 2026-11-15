@@ -199,7 +199,6 @@ export function App() {
   const [maintenanceWarning, setMaintenanceWarning] = useState<string | null>(null);
   const [updateState, setUpdateState] = useState<UpdateState>({ status: "idle" });
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
-  const [instancePanelOpen, setInstancePanelOpen] = useState(false);
   const [deletionInstanceId, setDeletionInstanceId] = useState<string | null>(null);
   const [accessKeyInstanceId, setAccessKeyInstanceId] = useState<string | null>(null);
   const [dataManagementPrevState, setDataManagementPrevState] = useState<ShellState | null>(null);
@@ -251,10 +250,14 @@ export function App() {
           setShellState("booting");
           return;
         }
+        // 全新安装（没有任何已配置实例）直接进入本地运行时配置，不再让用户
+        // 在「连接已有服务 / 搭建本地」之间做选择；需要云端时可在向导里返回上一步。
+        setSetupInitialStep((nextConfig?.instances?.length ?? 0) === 0 ? "local-directory" : "mode");
         setShellState(result.status === "ready" ? "frontend" : "setup");
       } catch (err) {
         if (cancelled || requestId !== startupRequestId.current) return;
         setError(err instanceof Error ? err.message : i18n.t("desktop.app.initializeFailed"));
+        setSetupInitialStep("mode");
         setShellState("setup");
       }
     };
@@ -492,7 +495,6 @@ export function App() {
   const handleRequestDeleteInstance = (instanceId: string) => {
     if (!config?.instances.some((instance) => instance.id === instanceId)) return;
     setError(null);
-    setInstancePanelOpen(false);
     setDeletionInstanceId(instanceId);
   };
 
@@ -737,7 +739,6 @@ export function App() {
       style={shellStyle}
     >
       <DesktopHeader
-        activeInstanceId={activeInstanceId}
         config={config}
         disabled={shellState === "booting"}
         canGoBack={shellState === "frontend" && webviewNavigation.canGoBack}
@@ -747,23 +748,7 @@ export function App() {
         onAddInstance={handleAddInstance}
         onOpenSetup={() => handleShowSetup()}
         onOpenDataManagement={handleOpenDataManagement}
-        onRequestDeleteInstance={handleRequestDeleteInstance}
         onSaveConfig={handleSaveConfig}
-        onSwitchInstance={handleSwitchInstance}
-        instancePanelOpen={instancePanelOpen}
-        onInstancePanelOpenChange={(open) => {
-          setInstancePanelOpen(open);
-          if (open) setUpdateDialogOpen(false);
-        }}
-        canCheckForUpdates={canCheckForUpdates}
-        updateState={updateState}
-        onUpdateAction={() => {
-          setInstancePanelOpen(false);
-          if (!compatibilityWarning) setUpdateDialogOpen(true);
-          if (["idle", "not-available", "error"].includes(updateState.status)) {
-            void window.openficDesktop.checkForUpdate();
-          }
-        }}
       />
       <section className="desktop-content">
         {shellState === "booting" ? (

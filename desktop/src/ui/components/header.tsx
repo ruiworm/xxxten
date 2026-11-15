@@ -1,11 +1,9 @@
-import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type MouseEvent } from "react";
-import { ArrowLeft, ArrowRight, Check, ChevronRight, Link2, Link2Off, Minus, Plus, RefreshCw, Square, Star, Trash2, X } from "lucide-react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Check, ChevronRight, Minus, Square, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { defaultDesktopConfig, type DesktopConfig, type DesktopInstance, type DownloadSourcePreference } from "../../shared/config";
-import type { UpdateState } from "../../shared/ipc";
+import { defaultDesktopConfig, type DesktopConfig, type DownloadSourcePreference } from "../../shared/config";
 
 interface DesktopHeaderProps {
-  activeInstanceId: string | null;
   config: DesktopConfig | null;
   disabled: boolean;
   canGoBack: boolean;
@@ -15,21 +13,8 @@ interface DesktopHeaderProps {
   onAddInstance: () => void;
   onOpenSetup: () => void;
   onOpenDataManagement: () => void;
-  onRequestDeleteInstance: (instanceId: string) => void;
   onSaveConfig: (config: DesktopConfig) => Promise<void>;
-  onSwitchInstance: (instanceId: string) => Promise<void>;
-  instancePanelOpen: boolean;
-  onInstancePanelOpenChange: (open: boolean) => void;
-  canCheckForUpdates: boolean;
-  updateState: UpdateState;
-  onUpdateAction: () => void;
 }
-
-type PingState =
-  | { status: "idle" }
-  | { status: "checking" }
-  | { status: "ok"; latencyMs: number }
-  | { status: "failed"; message: string };
 
 type MenuName = "instance" | "window";
 
@@ -80,24 +65,7 @@ function isMenuShortcut(value: unknown): value is MenuShortcut {
   ].includes(value);
 }
 
-function getInstanceLabel(instance: DesktopInstance, local: string): string {
-  if (instance.mode === "local") return local;
-  return instance.remoteUrl ?? "";
-}
-
-function getLatencyText(state: PingState, unavailable: string): string {
-  if (state.status === "checking") return "…";
-  if (state.status === "ok") return `${state.latencyMs}ms`;
-  if (state.status === "failed") return unavailable;
-  return "-";
-}
-
-function sortInstances(instances: DesktopInstance[]): DesktopInstance[] {
-  return [...instances].sort((left, right) => Number(Boolean(right.favorite)) - Number(Boolean(left.favorite)));
-}
-
 export function DesktopHeader({
-  activeInstanceId,
   config,
   disabled,
   canGoBack,
@@ -107,20 +75,9 @@ export function DesktopHeader({
   onAddInstance,
   onOpenSetup,
   onOpenDataManagement,
-  onRequestDeleteInstance,
   onSaveConfig,
-  onSwitchInstance,
-  instancePanelOpen,
-  onInstancePanelOpenChange,
-  canCheckForUpdates,
-  updateState,
-  onUpdateAction,
 }: DesktopHeaderProps) {
   const { t } = useTranslation();
-  const [panelVisible, setPanelVisible] = useState(false);
-  const [pingStates, setPingStates] = useState<Record<string, PingState>>({});
-  const [switchingId, setSwitchingId] = useState<string | null>(null);
-  const [isExportingLogs, setIsExportingLogs] = useState(false);
   const [openMenu, setOpenMenu] = useState<MenuName | null>(null);
   const [visibleMenu, setVisibleMenu] = useState<MenuName | null>(null);
   const [zoomFactor, setZoomFactor] = useState(1);
@@ -128,71 +85,10 @@ export function DesktopHeader({
   const [savingSource, setSavingSource] = useState(false);
   const [sourceError, setSourceError] = useState<string | null>(null);
   const menuBarRef = useRef<HTMLDivElement>(null);
-  const instances = sortInstances(config?.instances ?? []);
-  const hasUsableRuntime = instances.some((instance) => pingStates[instance.id]?.status === "ok") || Boolean(activeInstanceId);
-  const updateProgress = Math.min(Math.max(updateState.progress ?? 0, 0), 1);
-  const updateProgressStyle = { "--update-progress": String(updateProgress) } as CSSProperties;
-  const isCheckingForUpdate = updateState.status === "checking";
-  const isDownloadingUpdate = updateState.status === "downloading";
-  const updateIconState = isCheckingForUpdate
-    ? "checking"
-    : isDownloadingUpdate
-      ? "downloading"
-      : updateState.status === "available" || updateState.status === "downloaded"
-        ? "available"
-        : updateState.status === "error"
-          ? "error"
-          : "idle";
-  const updateAriaLabel = isDownloadingUpdate
-    ? t("desktop.header.updateDownloading", { progress: Math.round(updateProgress * 100) })
-    : isCheckingForUpdate
-      ? t("desktop.header.updateChecking")
-      : updateIconState === "available"
-        ? t("desktop.header.updateAvailable")
-        : updateIconState === "error"
-          ? t("desktop.header.updateFailedRetry")
-          : t("desktop.header.checkForUpdates");
-
-  const refreshPings = () => {
-    if (!instances.length) return;
-    setPingStates((current) => {
-      const next = { ...current };
-      for (const instance of instances) next[instance.id] = { status: "checking" };
-      return next;
-    });
-
-    for (const instance of instances) {
-      void window.openficDesktop
-        .pingInstance(instance)
-        .then((result) => {
-          setPingStates((current) => ({ ...current, [instance.id]: { status: "ok", latencyMs: result.latencyMs } }));
-        })
-        .catch((err) => {
-          setPingStates((current) => ({
-            ...current,
-            [instance.id]: { status: "failed", message: err instanceof Error ? err.message : t("desktop.header.connectionFailed") },
-          }));
-        });
-    }
-  };
 
   useEffect(() => {
     setSourceMenuOpen(false);
   }, [openMenu]);
-
-  useEffect(() => {
-    if (instancePanelOpen) refreshPings();
-  }, [instancePanelOpen, config?.activeInstanceId, instances.length]);
-
-  useEffect(() => {
-    if (instancePanelOpen) {
-      setPanelVisible(true);
-      return;
-    }
-
-    const timeout = window.setTimeout(() => setPanelVisible(false), 160);
-    return () => window.clearTimeout(timeout);
-  }, [instancePanelOpen]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -225,65 +121,19 @@ export function DesktopHeader({
     return window.openficDesktop.onZoomFactorChanged(setZoomFactor);
   }, []);
 
-  const handleSwitch = async (instanceId: string) => {
-    if (instanceId === activeInstanceId || switchingId) return;
-    setSwitchingId(instanceId);
-    try {
-      await onSwitchInstance(instanceId);
-      onInstancePanelOpenChange(false);
-    } finally {
-      setSwitchingId(null);
-    }
-  };
-
   const handleAddInstance = () => {
-    onInstancePanelOpenChange(false);
     setOpenMenu(null);
     onAddInstance();
   };
 
   const handleOpenSetup = () => {
-    onInstancePanelOpenChange(false);
     setOpenMenu(null);
     onOpenSetup();
   };
 
   const handleOpenDataManagement = () => {
-    onInstancePanelOpenChange(false);
     setOpenMenu(null);
     onOpenDataManagement();
-  };
-
-  const toggleFavorite = async (event: MouseEvent<HTMLButtonElement>, instance: DesktopInstance) => {
-    event.stopPropagation();
-    if (!config) return;
-    const nextConfig: DesktopConfig = {
-      ...config,
-      instances: config.instances.map((item) =>
-        item.id === instance.id ? { ...item, favorite: !item.favorite } : item,
-      ),
-    };
-    await onSaveConfig(nextConfig);
-  };
-
-  const requestDeleteInstance = (event: MouseEvent<HTMLButtonElement>, instance: DesktopInstance) => {
-    event.stopPropagation();
-    if (!config) return;
-    onInstancePanelOpenChange(false);
-    onRequestDeleteInstance(instance.id);
-  };
-
-  const handleExportLogs = async () => {
-    setOpenMenu(null);
-    if (isExportingLogs) return;
-    setIsExportingLogs(true);
-    try {
-      await window.openficDesktop.exportLogs();
-    } catch {
-      // The main process presents an actionable error dialog.
-    } finally {
-      setIsExportingLogs(false);
-    }
   };
 
   const handleChangeZoom = async (zoomChange: "in" | "out" | "reset") => {
@@ -594,124 +444,6 @@ export function DesktopHeader({
         />
       ) : null}
       <div className="desktop-titlebar-actions">
-        <button
-          className="titlebar-button titlebar-update-button"
-          data-update-state={updateIconState}
-          aria-label={updateAriaLabel}
-          aria-busy={isCheckingForUpdate || isDownloadingUpdate}
-          type="button"
-          disabled={!canCheckForUpdates}
-          onClick={onUpdateAction}
-        >
-          {isCheckingForUpdate ? <RefreshCw className="titlebar-update-checking" size={15} strokeWidth={2} /> : null}
-          {isDownloadingUpdate ? (
-            <svg className="titlebar-update-progress" style={updateProgressStyle} viewBox="0 0 20 20" aria-hidden="true">
-              <circle className="titlebar-update-progress-track" cx="10" cy="10" r="7" />
-              <circle className="titlebar-update-progress-value" cx="10" cy="10" r="7" />
-            </svg>
-          ) : null}
-          {!isCheckingForUpdate && !isDownloadingUpdate ? <RefreshCw size={15} strokeWidth={2} /> : null}
-        </button>
-        <div className="instance-switcher">
-          <button
-            className="titlebar-button titlebar-link-button"
-            data-connected={hasUsableRuntime}
-            aria-label={t("desktop.header.instance")}
-            type="button"
-            disabled={disabled}
-            onClick={() => onInstancePanelOpenChange(!instancePanelOpen)}
-          >
-            {hasUsableRuntime ? <Link2 size={15} strokeWidth={2} /> : <Link2Off size={15} strokeWidth={2} />}
-          </button>
-          {panelVisible && !disabled ? (
-            <>
-              <button
-                className="instance-panel-scrim"
-                data-state={instancePanelOpen ? "open" : "closed"}
-                type="button"
-                aria-label={t("desktop.header.closeInstancePanel")}
-                onClick={() => onInstancePanelOpenChange(false)}
-              />
-              <div
-                className="instance-panel"
-                data-state={instancePanelOpen ? "open" : "closed"}
-                role="dialog"
-                aria-label={t("desktop.header.instance")}
-              >
-                <div className="instance-panel-head">
-                  <div>
-                    <p className="instance-panel-title">{t("desktop.header.switchInstance")}</p>
-                  </div>
-                  <button
-                    className="instance-icon-button"
-                    type="button"
-                    aria-label={t("desktop.header.refresh")}
-                    onClick={refreshPings}
-                  >
-                    <RefreshCw size={14} strokeWidth={2} />
-                    {t("desktop.header.refresh")}
-                  </button>
-                </div>
-                <div className="instance-list">
-                  {instances.map((instance) => {
-                    const pingState = pingStates[instance.id] ?? { status: "idle" };
-                    const active = instance.id === activeInstanceId;
-                    return (
-                      <div
-                        className="instance-row"
-                        key={instance.id}
-                        data-active={active}
-                      >
-                        <span className="instance-dot" data-status={pingState.status} />
-                        <button
-                          className="instance-main"
-                          type="button"
-                          disabled={switchingId !== null}
-                          onClick={() => void handleSwitch(instance.id)}
-                        >
-                          <span className="instance-name-line">
-                            <span className="instance-label-wrap">
-                              <strong title={getInstanceLabel(instance, t("desktop.header.local"))}>
-                                {getInstanceLabel(instance, t("desktop.header.local"))}
-                              </strong>
-                              {active ? <span className="instance-current-badge">{t("desktop.header.current")}</span> : null}
-                            </span>
-                            <span>{getLatencyText(pingState, t("desktop.header.unavailable"))}</span>
-                          </span>
-                        </button>
-                        <span className="instance-row-actions">
-                          <button
-                            className="instance-action-button"
-                            type="button"
-                            aria-label={
-                              instance.favorite ? t("desktop.header.unfavorite") : t("desktop.header.favorite")
-                            }
-                            data-active={Boolean(instance.favorite)}
-                            onClick={(event) => void toggleFavorite(event, instance)}
-                          >
-                            <Star size={15} strokeWidth={2} fill={instance.favorite ? "currentColor" : "none"} />
-                          </button>
-                          <button
-                            className="instance-action-button"
-                            type="button"
-                            aria-label={t("desktop.header.deleteInstance")}
-                            onClick={(event) => requestDeleteInstance(event, instance)}
-                          >
-                            <Trash2 size={15} strokeWidth={2} />
-                          </button>
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <button className="instance-add" type="button" onClick={handleAddInstance}>
-                  <Plus size={15} strokeWidth={2} />
-                  {t("desktop.header.addInstance")}
-                </button>
-              </div>
-            </>
-          ) : null}
-        </div>
         <button
           className="titlebar-button"
           aria-label={t("desktop.header.minimizeWindow")}
