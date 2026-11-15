@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import ssl
 from collections.abc import Awaitable, Callable, Iterator, Mapping
 from dataclasses import dataclass
@@ -104,10 +105,29 @@ _CONTEXT_PATTERNS = (
     "context length",
     "maximum context",
     "context window",
+    "context size",
+    "context_size",
+    "context_length_exceeded",
+    "exceed_context_size",
     "token limit",
     "prompt is too long",
     "too many tokens",
 )
+_CONTEXT_NEEDED_PATTERNS = (
+    r"request\s*\(\s*(\d[\d,]*)\s*tokens?\s*\)",
+    r"requested\s+(\d[\d,]*)\s*tokens?",
+    r"prompt\s+contains\s+(\d[\d,]*)\s+tokens?",
+    r"(\d[\d,]*)\s+tokens?\s+(?:in\s+)?(?:the\s+)?(?:prompt|messages|request)",
+    r"(\d[\d,]*)\s+tokens?\s*>\s*\d[\d,]*\s*(?:maximum|max|limit)",
+)
+_CONTEXT_AVAILABLE_PATTERNS = (
+    r"available\s+context\s+size\s*\(\s*(\d[\d,]*)\s*tokens?\s*\)",
+    r"maximum\s+context\s+length\s+is\s+(\d[\d,]+)",
+    r"context\s+(?:size|length|window)\s*(?:is|of|:)?\s*(\d[\d,]*)\s*tokens?",
+    r"\bn_ctx\b[\"']?\s*[:=]\s*(\d[\d,]*)",
+    r"tokens?\s*>\s*(\d[\d,]*)\s*(?:maximum|max|limit)",
+)
+_CONTEXT_WINDOW_LADDER = (16384, 32768, 65536, 131072, 262144, 524288, 1048576)
 _TLS_CERTIFICATE_PATTERNS = (
     "certificate verify failed",
     "certificate_verify_failed",
@@ -143,8 +163,75 @@ def _exception_chain(exc: BaseException) -> Iterator[BaseException]:
         current = next_exception
 
 
+def _first_number(text: str, patterns: tuple[str, ...]) -> int | None:
+    """按顺序尝试正则，返回第一个捕获到的整数。"""
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match is None:
+            continue
+        raw = match.group(1).replace(",", "")
+        if raw.isdigit():
+            return int(raw)
+    return None
+
+
+def _suggest_context_window(needed: int | None, available: int | None) -> int:
+    """给出一个够用的上下文窗口建议值。"""
+    if needed is None and available is None:
+        # Agent 单轮固定开销（系统提示词 + 工具定义）已接近 15K，低于 32K 没有意义。
+        return 32768
+    target = 0
+    if needed is not None:
+        target = needed + needed // 2
+    if available is not None:
+        target = max(target, available * 2)
+    for step in _CONTEXT_WINDOW_LADDER:
+        if step >= target:
+            return step
+    return _CONTEXT_WINDOW_LADDER[-1]
+
+
+def _context_overflow_hint(exc: BaseException) -> str | None:
+    """上下文溢出时给出可操作的中文提示，替代服务端原始报错。
+
+    各家服务端措辞差异很大（OpenAI 用 maximum context length，LM Studio /
+    llama.cpp 用 exceeds the available context size），统一归一成同一段话，
+    并把请求量与可用窗口尽量解析出来，方便用户直接照做。
+    """
+    chain_text = " ".join(
+        text for text in (str(cause).strip() for cause in _exception_chain(exc)) if text
+    )
+    if not chain_text:
+        return None
+    if not _contains_any(chain_text.casefold(), _CONTEXT_PATTERNS):
+        return None
+
+    needed = _first_number(chain_text, _CONTEXT_NEEDED_PATTERNS)
+    available = _first_number(chain_text, _CONTEXT_AVAILABLE_PATTERNS)
+    suggested = _suggest_context_window(needed, available)
+
+    if needed is not None and available is not None:
+        detail = f"本次请求需要 {needed} tokens，但模型实际可用的上下文只有 {available} tokens。"
+    elif needed is not None:
+        detail = f"本次请求需要 {needed} tokens，超出了模型实际可用的上下文窗口。"
+    elif available is not None:
+        detail = f"模型实际可用的上下文只有 {available} tokens，不足以容纳本次请求。"
+    else:
+        detail = "请求超出了模型实际可用的上下文窗口。"
+
+    return (
+        f"模型上下文不足：{detail}"
+        f"请把模型上下文长度调到 {suggested} 或以上后再试"
+        "（LM Studio 在 My Models 里修改 Context Length，Ollama 调整 num_ctx）；"
+        "同时确认软件里该模型设置的「上下文长度」与模型实际加载值一致。"
+    )
+
+
 def format_error_message(exc: BaseException) -> str:
     """Include distinct chained causes in the user-visible error summary."""
+    overflow_hint = _context_overflow_hint(exc)
+    if overflow_hint is not None:
+        return overflow_hint
     message = str(exc).strip() or type(exc).__name__
     represented_messages = [message.casefold()]
     cause_details: list[str] = []

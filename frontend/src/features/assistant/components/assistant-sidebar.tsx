@@ -1801,7 +1801,6 @@ export const AssistantSidebar = forwardRef<AssistantSidebarHandle, AssistantSide
             </div>
 
             <AgentInput
-              voiceScope={`${projectId}:${currentTaskId ?? "new"}:${agentSidebar.sessionId ?? "new"}`}
               specialPanels={
                 isViewingSubagent ? (
                   <AgentSpecialPanels

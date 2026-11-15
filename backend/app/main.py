@@ -24,7 +24,6 @@ from app.api.exceptions import register_exception_handlers
 from app.api.middleware import AccessLogMiddleware
 from app.api.routers import (
     auth,
-    audio,
     agent_definitions,
     agent_memories,
     agent_rules,
@@ -719,7 +718,6 @@ def create_app() -> FastAPI:
     app.include_router(world_info.router, prefix=app_settings.api_v1_prefix)
     app.include_router(world_info_entries.router, prefix=app_settings.api_v1_prefix)
     app.include_router(settings.router, prefix=app_settings.api_v1_prefix)
-    app.include_router(audio.router, prefix=app_settings.api_v1_prefix)
     app.include_router(import_router.router, prefix=app_settings.api_v1_prefix)
     app.include_router(openai_codex.router, prefix=app_settings.api_v1_prefix)
     app.include_router(model_providers.router, prefix=app_settings.api_v1_prefix)

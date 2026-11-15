@@ -34,6 +34,10 @@ import { AdvancedParamsSection } from "./advanced-params-section";
 import { ModelMetadataSection } from "./model-metadata-section";
 
 // 先定义 schema 和类型，以便在 ModelParamField 中使用
+// 默认上下文长度。取值偏保守：填大了后端不压缩历史，会把超长请求直接打给服务端
+// 触发 400；填小了只是压缩得更勤。Agent 单轮固定开销已接近 15K，所以不能低于 32K。
+const DEFAULT_CONTEXT_LENGTH = 32768;
+
 const modelSchema = z.object({
   name: z.string().min(1, "nameRequired"),
   taskType: z.enum(["llm", "embedding", "rerank"]),
@@ -113,7 +117,7 @@ export function ModelFormDialog({
       presencePenalty: 0,
       repetitionPenalty: 1,
       maxTokens: null,
-      contextLength: 128000,
+      contextLength: DEFAULT_CONTEXT_LENGTH,
       inputPrice: 0,
       outputPrice: 0,
       cacheReadPrice: 0,
@@ -147,7 +151,7 @@ export function ModelFormDialog({
           presencePenalty: model.presencePenalty ?? 0,
           repetitionPenalty: model.repetitionPenalty ?? 1,
           maxTokens: model.maxTokens ?? null,
-          contextLength: model.contextLength ?? 128000,
+          contextLength: model.contextLength ?? DEFAULT_CONTEXT_LENGTH,
           inputPrice: model.inputPrice ?? 0,
           outputPrice: model.outputPrice ?? 0,
           cacheReadPrice: model.cacheReadPrice ?? 0,
@@ -171,7 +175,7 @@ export function ModelFormDialog({
           presencePenalty: 0,
           repetitionPenalty: 1,
           maxTokens: null,
-          contextLength: 128000,
+          contextLength: DEFAULT_CONTEXT_LENGTH,
           inputPrice: 0,
           outputPrice: 0,
           cacheReadPrice: 0,

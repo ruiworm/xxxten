@@ -566,6 +566,22 @@
   gap: 2px;
 }
 
+.settings-sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-sidebar-group + .settings-sidebar-group {
+  margin-top: 14px;
+}
+
+.settings-sidebar-group-title {
+  padding: 0 12px 4px;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
 .settings-sidebar-item {
   display: flex;
   align-items: center;

@@ -22,6 +22,7 @@ from app.agent_runtime.graph.llm_invoke import (
     classify_error,
     compute_retry_delay,
     extract_retry_after_ms,
+    format_error_message,
     invoke_model_with_retry,
 )
 
@@ -486,3 +487,54 @@ class TestInvokeModelWithRetry:
             )
 
         assert calls == 1
+
+
+class TestContextOverflowHint:
+    """上下文溢出时给出可操作提示，而不是把服务端原始报错直接抛给用户。"""
+
+    def test_lm_studio_context_size_error_is_explained(self) -> None:
+        message = (
+            'Engine protocol predict request returned 400: {"error":{"code":400,'
+            '"message":"request (15036 tokens) exceeds the available context size '
+            '(8192 tokens), try increasing it","type":"exceed_context_size_error",'
+            '"n_prompt_tokens":15036,"n_ctx":8192}}'
+        )
+
+        text = format_error_message(RuntimeError(message))
+
+        assert "15036" in text
+        assert "8192" in text
+        assert "32768" in text
+        assert "Context Length" in text
+        assert "exceeds the available context size" not in text
+
+    def test_openai_maximum_context_length_is_explained(self) -> None:
+        message = (
+            "This model's maximum context length is 8192 tokens. "
+            "However, you requested 15036 tokens."
+        )
+
+        text = format_error_message(RuntimeError(message))
+
+        assert "15036" in text
+        assert "8192" in text
+
+    def test_overflow_without_numbers_still_suggests_a_window(self) -> None:
+        text = format_error_message(RuntimeError("Error code: 400 - context_length_exceeded"))
+
+        assert "上下文不足" in text
+        assert "32768" in text
+
+    def test_unrelated_error_is_untouched(self) -> None:
+        assert format_error_message(RuntimeError("connection refused")) == "connection refused"
+
+    def test_lm_studio_error_classifies_as_context_overflow(self) -> None:
+        message = (
+            'request (15036 tokens) exceeds the available context size '
+            '(8192 tokens), try increasing it'
+        )
+
+        outcome = classify_error(RuntimeError(message))
+
+        assert outcome.category is RetryCategory.CONTEXT_OVERFLOW
+        assert outcome.decision is RetryDecision.NO_RETRY

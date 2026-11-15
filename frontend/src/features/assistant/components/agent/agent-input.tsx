@@ -5,7 +5,6 @@ import {
   Brain,
   CloudUpload,
   ExternalLink,
-  Mic,
   Plus,
   Play,
   ShieldCheck,
@@ -31,7 +30,6 @@ import type { AgentComposerItems } from "@/lib/command.types";
 import { REASONING_EFFORT_OPTIONS } from "@/lib/reasoning-effort";
 
 import { useAgentInputHistory } from "../../hooks/use-agent-input-history";
-import { useVoiceInput } from "../../hooks/use-voice-input";
 import {
   getAgentFiles,
   hasLeftAgentDropZone,
@@ -57,7 +55,6 @@ import {
   getNextToolbarCompressionLevel,
   MAX_TOOLBAR_COMPRESSION_LEVEL,
 } from "./agent-toolbar-compression";
-import { AgentVoiceInput } from "./agent-voice-input";
 import { AgentPendingMessageCard } from "./pending-message-card";
 
 interface AgentInputProps {
@@ -76,7 +73,6 @@ interface AgentInputProps {
   onChange: (value: string) => void;
   onAttachmentsChange: (attachments: PendingAgentAttachment[]) => void;
   onSend: (message?: string) => void;
-  voiceScope?: string;
   onAbort: () => void;
   canContinue?: boolean;
   isContinuing?: boolean;
@@ -138,7 +134,6 @@ export function AgentInput({
   readOnly = false,
   readOnlyMessage,
   onUploadAttachments,
-  voiceScope = projectId,
 }: AgentInputProps) {
   const { t } = useTranslation();
   const bodyMode = getAgentInputBodyMode(agentStatus, Boolean(specialPanels), forceSpecialPanels);
@@ -176,7 +171,6 @@ export function AgentInput({
     isStopping || (shouldAbort ? false : shouldContinue ? disabled || isContinuing : !canSend);
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
-  const focusAfterVoiceResult = useRef(false);
   const [pendingClearanceHeight, setPendingClearanceHeight] = useState(0);
   const [mentionSuggestions, setMentionSuggestions] = useState<AgentComposerSuggestionState | null>(
     null,
@@ -297,31 +291,9 @@ export function AgentInput({
     onSend();
   }, [isStopping, onSend, recordInputHistory, value]);
 
-  const voice = useVoiceInput({
-    scope: voiceScope,
-    disabled: isAddMenuDisabled || isStopping,
-    onResult: (text, action) => {
-      const message = value ? `${value}\n${text}` : text;
-      if (action === "stop") {
-        focusAfterVoiceResult.current = true;
-        handleComposerChange(message);
-      } else {
-        recordInputHistory(message);
-        onSend(message);
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (focusAfterVoiceResult.current && !voice.active) {
-      focusAfterVoiceResult.current = false;
-      inputContainerRef.current?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus();
-    }
-  }, [voice.active]);
-
   useLayoutEffect(() => {
     const container = inputContainerRef.current;
-    if (!container || voice.active) return;
+    if (!container) return;
 
     const syncHeight = () => {
       const nextHeight = Math.round(container.getBoundingClientRect().height);
@@ -341,7 +313,7 @@ export function AgentInput({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [voice.active]);
+  }, []);
 
   const updateToolbarCompressionLevel = useCallback((nextLevel: number) => {
     const normalizedLevel = Math.max(0, Math.min(nextLevel, MAX_TOOLBAR_COMPRESSION_LEVEL));
@@ -352,7 +324,7 @@ export function AgentInput({
 
   useLayoutEffect(() => {
     const toolbar = toolbarRef.current;
-    if (!toolbar || voice.active) return;
+    if (!toolbar) return;
 
     const syncOverflow = (allowExpand: boolean) => {
       const currentLevel = toolbarCompressionLevel;
@@ -396,7 +368,7 @@ export function AgentInput({
       resizeObserver.disconnect();
       if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
     };
-  }, [toolbarCompressionLevel, toolbarContentKey, updateToolbarCompressionLevel, voice.active]);
+  }, [toolbarCompressionLevel, toolbarContentKey, updateToolbarCompressionLevel]);
 
   useEffect(() => {
     if (bodyMode === "composer" && !readOnly && !isComposerLocked) return;
@@ -517,10 +489,7 @@ export function AgentInput({
   };
 
   return (
-    <Box
-      className="ai-sidebar-input-area"
-      data-voice-active={voice.active || undefined}
-    >
+    <Box className="ai-sidebar-input-area">
       <input
         ref={imageFileInputRef}
         className="agent-composer-file-input"
@@ -539,7 +508,7 @@ export function AgentInput({
       <motion.div
         className="ai-sidebar-input-stage"
         initial={false}
-        animate={{ marginBottom: voice.active ? 0 : 10 }}
+        animate={{ marginBottom: 10 }}
         transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
       >
         <AnimatePresence initial={false}>
@@ -597,12 +566,11 @@ export function AgentInput({
 
         <motion.div
           initial={false}
-          animate={{ height: voice.active ? 44 : "auto" }}
+          animate={{ height: "auto" }}
           transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
           ref={inputContainerRef}
           className="ai-sidebar-input-container"
           data-mode={bodyMode}
-          data-voice-active={voice.active || undefined}
           data-dragging-files={isDraggingFiles || undefined}
           onDragEnter={(event) => {
             if (event.dataTransfer.types.includes("Files")) setIsDraggingFiles(true);
@@ -623,39 +591,7 @@ export function AgentInput({
           }}
           onDrop={handleDrop}
         >
-          <AnimatePresence>
-            {voice.active ? (
-              <motion.div
-                key="voice"
-                className="agent-voice-shell"
-                initial={{ opacity: 0 }}
-                animate={{
-                  opacity: 1,
-                  transition: { duration: reduceMotion ? 0 : 0.1, delay: reduceMotion ? 0 : 0.14 },
-                }}
-                exit={{
-                  opacity: 0,
-                  transition: { duration: reduceMotion ? 0 : 0.08 },
-                }}
-              >
-                <AgentVoiceInput
-                  voice={voice}
-                  canSend={
-                    Boolean(modelId) &&
-                    !isModelsLoading &&
-                    !modelsError &&
-                    !isProcessingAttachments &&
-                    !isComposerLocked
-                  }
-                />
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-          <div
-            className="agent-composer-text-content"
-            inert={voice.active || undefined}
-            aria-hidden={voice.active || undefined}
-          >
+          <div className="agent-composer-text-content">
             <div
               className="agent-file-drop-overlay"
               aria-hidden="true"
@@ -817,10 +753,8 @@ export function AgentInput({
         <motion.div
           className="ai-sidebar-input-toolbar-shell"
           initial={false}
-          animate={{ height: voice.active ? 0 : "auto", opacity: voice.active ? 0 : 1 }}
+          animate={{ height: "auto", opacity: 1 }}
           transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
-          inert={voice.active || undefined}
-          aria-hidden={voice.active || undefined}
         >
           <Flex
             ref={toolbarRef}
@@ -978,23 +912,6 @@ export function AgentInput({
               gap="2"
               className="ai-sidebar-input-toolbar-actions"
             >
-              <IconButton
-                type="button"
-                size="1"
-                variant="ghost"
-                color="gray"
-                disabled={isAddMenuDisabled}
-                className="agent-voice-trigger"
-                aria-label={t("speech.title")}
-                title={t("speech.title")}
-                onClick={() => {
-                  setIsAddMenuOpen(false);
-                  mentionSuggestions?.onClose();
-                  void voice.start();
-                }}
-              >
-                <Mic size={16} />
-              </IconButton>
               {isIndexStatusHidden ? null : <AgentIndexStatusIndicator projectId={projectId} />}
 
               <Tooltip

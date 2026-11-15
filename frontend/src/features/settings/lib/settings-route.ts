@@ -1,6 +1,5 @@
 export const SETTINGS_ROUTE_CATEGORIES = [
   "general",
-  "audio",
   "personalization",
   "editor",
   "notifications",
