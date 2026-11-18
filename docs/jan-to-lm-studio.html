@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>把 Jan 里的模型迁移到 LM Studio</title>
+<style>
+:root {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #5b6570;
+  --border: #e4e7eb;
+  --surface: #f6f8fa;
+  --code-fg: #b02a37;
+  --accent: #2f6feb;
+  --accent-soft: #eef4ff;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --fg: #e6edf3;
+    --muted: #9aa4af;
+    --border: #2d333b;
+    --surface: #161b22;
+    --code-fg: #ff7b72;
+    --accent: #58a6ff;
+    --accent-soft: #12233a;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+  font-size: 16px;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 800px; margin: 0 auto; padding: 56px 24px 96px; }
+h1 {
+  font-size: 30px;
+  line-height: 1.35;
+  font-weight: 700;
+  margin: 0 0 14px;
+  letter-spacing: 0.3px;
+}
+h1 + p { color: var(--muted); font-size: 15px; margin-top: 0; }
+h1 + p + p { color: var(--muted); font-size: 15px; }
+h2 {
+  font-size: 21px;
+  font-weight: 600;
+  margin: 44px 0 12px;
+  padding-left: 12px;
+  border-left: 4px solid var(--accent);
+  scroll-margin-top: 20px;
+}
+h3 { font-size: 17px; font-weight: 600; margin: 26px 0 8px; scroll-margin-top: 20px; }
+p { margin: 12px 0; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+strong { font-weight: 600; }
+hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+ul, ol { margin: 12px 0; padding-left: 24px; }
+li { margin: 7px 0; }
+li::marker { color: var(--muted); }
+code {
+  font-family: "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+  font-size: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1.5px 6px;
+  color: var(--code-fg);
+}
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 16px 0;
+  overflow-x: auto;
+  box-shadow: var(--shadow);
+}
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--fg);
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre;
+  display: block;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  font-size: 15px;
+  display: block;
+  overflow-x: auto;
+}
+th, td { border: 1px solid var(--border); padding: 10px 14px; text-align: left; vertical-align: top; }
+th { background: var(--surface); font-weight: 600; white-space: nowrap; }
+tbody tr:nth-child(even) { background: var(--surface); }
+blockquote {
+  margin: 18px 0;
+  padding: 12px 18px;
+  border-left: 3px solid var(--border);
+  background: var(--surface);
+  border-radius: 0 8px 8px 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+blockquote p { margin: 5px 0; }
+nav.toc {
+  margin: 32px 0 8px;
+  padding: 18px 22px;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+nav.toc p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+nav.toc ul { margin: 0; padding-left: 18px; }
+nav.toc li { margin: 5px 0; font-size: 15px; }
+nav.toc li.lvl3 { padding-left: 16px; font-size: 14px; color: var(--muted); }
+@media print {
+  body { font-size: 11pt; }
+  main { max-width: none; padding: 0; }
+  nav.toc { break-inside: avoid; }
+  h2, h3 { break-after: avoid; }
+  pre, table, blockquote { break-inside: avoid; }
+  a { color: inherit; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1 id="jan-lm-studio">把 Jan 里的模型迁移到 LM Studio</h1>
+<p>适用 Windows。Jan 和 LM Studio 用的是同一种模型文件（<code>.gguf</code>），所以<strong>不用重新下载，搬过去就能用</strong>。整个过程大约 5 分钟。</p>
+<p>这份教程只讲一件事：<strong>把已经下好的模型从 Jan 搬到 LM Studio</strong>。不涉及下载新模型。</p>
+<hr />
+<nav class="toc"><p>目录</p><ul><li class="lvl2"><a href="#_1">迁移前先认清一件事</a></li>
+<li class="lvl2"><a href="#jan">第一步：找到 Jan 的模型在哪</a></li>
+<li class="lvl2"><a href="#_2">第二步：判断哪些能搬</a></li>
+<li class="lvl2"><a href="#lm-studio">第三步：打开 LM Studio 的模型目录</a></li>
+<li class="lvl2"><a href="#_3">第四步：建两层文件夹，把模型粘贴进去</a></li>
+<li class="lvl2"><a href="#lm-studio_1">第五步：重启 LM Studio，确认搬成功了</a></li>
+<li class="lvl2"><a href="#jan_1">第六步：确认没问题后，清理 Jan（可选）</a></li>
+<li class="lvl2"><a href="#_4">常见问题</a></li>
+<li class="lvl2"><a href="#_5">一句话总结</a></li></ul></nav><h2 id="_1">迁移前先认清一件事</h2>
+<p>两个软件的文件夹结构<strong>不一样</strong>，这是唯一需要理解的地方。</p>
+<p><strong>Jan 是这样（一层）：</strong></p>
+<pre><code>Jan 的模型目录\
+└── Qwen3-8B\
+    └── model.gguf
+</code></pre>
+<p><strong>LM Studio 要这样（两层）：</strong></p>
+<pre><code>LM Studio 的模型目录\
+└── qwen\              ← 第一层：随便起个名
+    └── Qwen3.5-9B\      ← 第二层：模型名
+        └── model.gguf
+</code></pre>
+<p>LM Studio 只认两层。<strong>少一层的话，模型不会出现在列表里，而且不报任何错误</strong>——界面一片安静，你会以为软件坏了。</p>
+<p>所以搬的时候不能整个文件夹拖过去，必须多套一层。</p>
+<hr />
+<h2 id="jan">第一步：找到 Jan 的模型在哪</h2>
+<p>Jan 的模型藏在系统目录里，路径比较深。</p>
+<p>打开「此电脑」，在最上面的地址栏粘贴这个路径，回车：</p>
+<pre><code>%APPDATA%\Jan\data\llamacpp\models
+</code></pre>
+<p>如果提示找不到，说明你的 Jan 是老版本，换成：</p>
+<pre><code>C:\Users\%USERNAME%\jan\models
+</code></pre>
+<p>进去之后，你会看到一个个文件夹，<strong>每个文件夹就是一个模型</strong>。</p>
+<blockquote>
+<p>如果两个路径都不对，说明你改过 Jan 的存放位置。打开 Jan → 设置（Settings）→ 通用（General），里面有一行 <strong>Jan Data Folder</strong>，旁边有个按钮能直接打开真实位置。</p>
+</blockquote>
+<hr />
+<h2 id="_2">第二步：判断哪些能搬</h2>
+<p>点开任意一个模型文件夹，你会看到类似这些文件。<strong>不是每个都要搬</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>你看到的文件</th>
+<th>是什么</th>
+<th>搬不搬</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>model.gguf</code></td>
+<td>模型本体</td>
+<td><strong>要搬</strong></td>
+</tr>
+<tr>
+<td><code>mmproj.gguf</code></td>
+<td>视觉模块（只有能看图的模型才有）</td>
+<td><strong>要搬</strong>，和主模型放一起</td>
+</tr>
+<tr>
+<td><code>model.gguf.tmp</code></td>
+<td><strong>没下载完</strong>的半成品</td>
+<td><strong>不能搬</strong></td>
+</tr>
+<tr>
+<td><code>model.gguf.url</code></td>
+<td>一个网址记录</td>
+<td>不用</td>
+</tr>
+<tr>
+<td><code>model.yml</code></td>
+<td>Jan 自己的配置文件</td>
+<td>不用</td>
+</tr>
+</tbody>
+</table>
+<p><strong>重点看 <code>.tmp</code>。</strong> 它看着有体积、名字也对，但只要结尾是 <code>.tmp</code>，就说明当初下载中断了。这种文件改名搬过去，LM Studio 能认出来，但一加载就报错。</p>
+<p><strong>判断方法：只要文件夹里有 <code>model.gguf</code>（结尾就是 <code>.gguf</code>），这个模型就是完整的，可以搬。</strong></p>
+<hr />
+<h2 id="lm-studio">第三步：打开 LM Studio 的模型目录</h2>
+<p>不同版本的 LM Studio，这个入口的位置不一样，有的叫 <strong>My Models</strong>，有的翻译成「我的模型」，有的只剩一个文件夹图标、没有文字。<strong>所以别去找菜单，直接用路径。</strong></p>
+<p>打开「此电脑」，在地址栏粘贴：</p>
+<pre><code>%USERPROFILE%\.lmstudio\models
+</code></pre>
+<p>回车。这个文件夹就是 LM Studio 放模型的地方。</p>
+<p><strong>打不开怎么办：</strong></p>
+<ul>
+<li>提示找不到 → 你的 LM Studio 是老版本，换成 <code>%USERPROFILE%\.cache\lm-studio\models</code></li>
+<li>两个都不对 → 你改过模型存放位置。打开 LM Studio → 设置（Settings）→ 找 <strong>Model Directory</strong>（模型目录），那里显示的就是真实路径</li>
+</ul>
+<hr />
+<h2 id="_3">第四步：建两层文件夹，把模型粘贴进去</h2>
+<p>现在把 Jan 的模型搬过来。</p>
+<p><strong>以 <code>Qwen3.5-9B</code> 这个模型为例：</strong></p>
+<ol>
+<li>在 LM Studio 的模型目录里，<strong>新建一个文件夹</strong>，名字随便起，比如 <code>qwen</code></li>
+<li>进入 <code>qwen</code>，<strong>再新建一个文件夹</strong>，用模型名，比如 <code>Qwen3.5-9B</code></li>
+<li>回到 Jan 的目录，进入那个模型文件夹，选中 <code>model.gguf</code></li>
+<li><strong>复制</strong>（不是剪切），粘贴到刚建的 <code>Qwen3.5-9B</code> 文件夹里</li>
+<li>如果那个模型还有 <code>mmproj.gguf</code>，也一起复制进同一个文件夹</li>
+</ol>
+<p>做完之后应该长这样：</p>
+<pre><code>C:\Users\你的用户名\.lmstudio\models\
+└── qwen\
+    └── Qwen3.5-9B\
+        └── model.gguf
+</code></pre>
+<p><strong>几个细节：</strong></p>
+<ul>
+<li><strong>文件名不用改。</strong> <code>model.gguf</code> 这个名字可以照用，LM Studio 会从文件内部读出模型信息。</li>
+<li><strong>一层里只放一个模型。</strong> 两个 gguf 塞进同一个文件夹会显示混乱。</li>
+<li><strong>用复制，不要用剪切。</strong> 先确认 LM Studio 里能正常加载，再回头删 Jan 的，避免中途出错两头空。</li>
+<li><strong>要搬多个模型，就重复这套动作</strong>，每个模型在 <code>qwen</code> 下面各占一个文件夹。</li>
+</ul>
+<hr />
+<h2 id="lm-studio_1">第五步：重启 LM Studio，确认搬成功了</h2>
+<ol>
+<li>完全关掉 LM Studio（右下角托盘图标也要退出）</li>
+<li>重新打开</li>
+<li>在聊天界面<strong>顶部的模型选择下拉框</strong>里找刚搬进去的模型</li>
+<li>选中它，点 <strong>Load</strong>（加载）</li>
+</ol>
+<p>能加载起来、能正常对话，就说明迁移成功了。</p>
+<p><strong>如果列表里还是没有：</strong></p>
+<p>回到第四步检查文件夹结构，99% 的情况是只建了一层——把文件直接放在了 <code>qwen</code> 里面，而没有放在 <code>qwen\模型名\</code> 里面。</p>
+<hr />
+<h2 id="jan_1">第六步：确认没问题后，清理 Jan（可选）</h2>
+<p>LM Studio 里能用了，Jan 那边就可以删了，能腾出空间。</p>
+<p><strong>可以删：</strong> 第一步打开的那个 <code>models</code> 文件夹下面的各个模型文件夹。</p>
+<p><strong>不要删：</strong> 整个 <code>Jan\data</code> 目录。里面除了模型，还有你的聊天记录和助手设置，删了整个 Jan 就恢复出厂状态了。</p>
+<hr />
+<h2 id="_4">常见问题</h2>
+<p><strong>模型列表里看不到</strong><br />
+文件夹少了一层。检查是不是 <code>models\发布者\模型名\文件.gguf</code> 这个结构。</p>
+<p><strong>能出现，但加载报错</strong><br />
+搬的可能是 <code>.tmp</code> 未完成文件。回去看文件名结尾是不是真的 <code>.gguf</code>。</p>
+<p><strong>加载很慢，或者一个字一个字往外蹦</strong><br />
+模型太大，显存装不下，一部分在内存里跑。这不是迁移的问题，换个体积小一点的模型就好。</p>
+<p><strong>Jan 里明明有，但复制不出来</strong><br />
+可能 Jan 还在后台运行，占着文件。退出 Jan（含托盘图标）再复制。</p>
+<p><strong>找不到 Jan 的模型目录</strong><br />
+用 Jan 设置里的 <strong>Jan Data Folder</strong> 按钮打开，那个最准，不受版本影响。</p>
+<p><strong>搬过去占用双份空间</strong><br />
+复制本来就是两份。如果你想只占一份，确认 LM Studio 能正常加载后，把 Jan 那边的原始文件删掉即可。</p>
+<hr />
+<h2 id="_5">一句话总结</h2>
+<p>找到 Jan 的 <code>model.gguf</code> → 在 LM Studio 的模型目录里建「发布者 / 模型名」两层文件夹 → 粘进去 → 重启 LM Studio。</p>
+</main>
+</body>
+</html>
