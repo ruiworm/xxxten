@@ -23,7 +23,10 @@ const DEFAULT_PYPI_INDEX_URL = "https://pypi.org/simple/";
 const TSINGHUA_PYPI_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple/";
 const ALIYUN_PYPI_INDEX_URL = "https://mirrors.aliyun.com/pypi/simple/";
 const USTC_PYPI_INDEX_URL = "https://pypi.mirrors.ustc.edu.cn/simple/";
-const PYPI_INDEX_PROBE_TIMEOUT_MS = 5_000;
+// 探测是并行的，最慢的那个决定总等待时间。
+// pypi.org 在国内经常完全无响应，会白等满超时；
+// 可用镜像实测 0.2s 内返回，2s 足够留出余量。
+const PYPI_INDEX_PROBE_TIMEOUT_MS = 2_000;
 const BACKEND_READY_TIMEOUT_MS = 60 * 60_000;
 // 连通性判据用 uv：任何 PyPI 镜像都必然镜像它，与本项目是否发布到 PyPI 无关。
 // 曾用 openfic 判断 → NovelForge 后端并不发布到 PyPI，国内镜像因此全部被判「不可用」，
