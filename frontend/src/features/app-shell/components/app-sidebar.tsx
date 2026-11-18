@@ -153,12 +153,6 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
 
   const navItems = useMemo<AppSidebarNavItem[]>(() => {
     const pathname = location.pathname;
-    // 世界观与角色是项目内的数据：
-    // - 在项目作用域路由里用路由参数
-    // - 在统计 / 提示词链这类全局页沿用最近打开的项目，避免导航里出现死路
-    // - 项目库页面不显示，让「这两个入口属于某个项目」这件事一眼可辨
-    const lastOpenedProjectId = recentProjects[0]?.projectId ?? null;
-    const navProjectId = projectId ?? (pathname === "/" ? null : lastOpenedProjectId);
 
     const items: AppSidebarNavItem[] = [
       {
@@ -169,17 +163,20 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
       },
     ];
 
-    if (navProjectId) {
+    // 世界观与角色只属于某个项目，仅在项目作用域路由里出现。
+    // 项目库、仪表盘、提示词链这些全局页面没有当前项目，一律不显示，
+    // 避免「看起来它是全局功能」的误解。
+    if (projectId) {
       items.push(
         {
           label: t("topbar.workspace"),
-          href: `/projects/${navProjectId}/world-info`,
+          href: `/projects/${projectId}/world-info`,
           icon: Globe,
           active: pathname.endsWith("/world-info"),
         },
         {
           label: t("topbar.characters"),
-          href: `/projects/${navProjectId}/characters`,
+          href: `/projects/${projectId}/characters`,
           icon: UserRound,
           active: pathname.endsWith("/characters"),
         },
@@ -202,7 +199,7 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
     );
 
     return items;
-  }, [location.pathname, projectId, recentProjects, t]);
+  }, [location.pathname, projectId, t]);
 
   const handleLanguageChange = async (language: string) => {
     const nextLanguage = language as LanguageCode;
