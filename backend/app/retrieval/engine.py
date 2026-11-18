@@ -11,8 +11,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import lancedb  # type: ignore[import-untyped]
-from lancedb.index import FTS, BTree, IvfHnswSq  # type: ignore[import-untyped]
 
 from app.core.errors import ValidationError
 from app.retrieval.internal.common.codec import serialize_metadata
@@ -294,6 +292,10 @@ class LanceDBRetrievalEngine:
         )
 
     async def _connect(self):
+        # lancedb 会连带 pyarrow 等重依赖，导入约 3.8s。
+        # 只有真正检索/建索引时才需要，所以放到这里按需导入。
+        import lancedb  # type: ignore[import-untyped]
+
         self.base_dir.mkdir(parents=True, exist_ok=True)
         return await lancedb.connect_async(self.db_uri)
 
@@ -318,6 +320,8 @@ class LanceDBRetrievalEngine:
             await db.drop_table(self.table_name, ignore_missing=True)
 
     async def _ensure_indexes(self, table, *, force_rebuild: bool = False) -> None:
+        from lancedb.index import BTree, FTS, IvfHnswSq  # type: ignore[import-untyped]
+
         if await table.count_rows() <= 0:
             return
 

@@ -326,7 +326,7 @@ def test_uses_recall_only_when_main_list_content_is_missing(
             language=None,
         )
 
-    monkeypatch.setattr(service, "extract_with_metadata", fake_extract_with_metadata)
+    monkeypatch.setattr("trafilatura.extract_with_metadata", fake_extract_with_metadata)
 
     result = service.extract_html(
         "<article><div data-cds=\"Skeleton\">Loading</div><p>正文</p>"
@@ -354,7 +354,7 @@ def test_does_not_use_recall_for_regular_page_without_skeleton(
             language=None,
         )
 
-    monkeypatch.setattr(service, "extract_with_metadata", fake_extract_with_metadata)
+    monkeypatch.setattr("trafilatura.extract_with_metadata", fake_extract_with_metadata)
 
     service.extract_html(
         "<article><p>正文</p><ul><li>关键文档列表项内容</li></ul></article>",
@@ -378,7 +378,7 @@ def test_does_not_rewrite_precision_markdown_spacing(
             language=None,
         )
 
-    monkeypatch.setattr(service, "extract_with_metadata", fake_extract_with_metadata)
+    monkeypatch.setattr("trafilatura.extract_with_metadata", fake_extract_with_metadata)
 
     result = service.extract_html(
         "<article><p>正文</p></article>",

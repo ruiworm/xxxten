@@ -12,7 +12,6 @@ from urllib.parse import urljoin, urlsplit, urlunsplit
 import httpx
 from charset_normalizer import from_bytes
 from lxml import html as lxml_html
-from trafilatura import extract_with_metadata
 
 from app.agent_runtime.tools.errors import ToolExecutionError
 
@@ -374,6 +373,9 @@ async def fetch_html(
 
 
 def extract_html(html: str, url: str) -> ExtractedPage:
+    # trafilatura 及其依赖只在真正抓网页时才需要，按需导入避免拖慢启动
+    from trafilatura import extract_with_metadata
+
     html, has_skeleton = _clean_html_for_extraction(html)
     document = extract_with_metadata(
         html,
