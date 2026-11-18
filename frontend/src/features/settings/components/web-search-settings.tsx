@@ -20,20 +20,15 @@ import type {
 
 const FIELD_LABEL_KEY_MAP: Record<string, string> = {
   ddgs_backend: "settings.webSearchFieldDdgsBackend",
-  jina_base_url: "settings.webSearchFieldJinaBaseUrl",
   searxng_base_url: "settings.webSearchFieldSearxngBaseUrl",
   zhipu_search_engine: "settings.webSearchFieldZhipuSearchEngine",
-};
-
-const FIELD_DEFAULT_VALUE_MAP: Record<string, string> = {
-  jina_base_url: "https://s.jina.ai/",
 };
 
 function getProviderFieldValue(
   field: WebSearchProviderField,
   draft: Record<string, string>,
 ): string {
-  return draft[field.key] ?? FIELD_DEFAULT_VALUE_MAP[field.key] ?? field.options[0] ?? "";
+  return draft[field.key] ?? field.options[0] ?? "";
 }
 
 function parseDomainFilters(value: string): string[] {
@@ -57,27 +52,15 @@ const FIELD_OPTION_LABEL_KEY_MAP: Record<string, Record<string, string>> = {
 };
 
 const PROVIDER_LABEL_KEY_MAP: Record<string, string> = {
-  brave: "settings.webSearchProviderBrave",
   ddgs: "settings.webSearchProviderDdgs",
   deepseek: "settings.webSearchProviderDeepSeek",
-  exa: "settings.webSearchProviderExa",
-  jina: "settings.webSearchProviderJina",
-  perplexity: "settings.webSearchProviderPerplexity",
   searxng: "settings.webSearchProviderSearxng",
-  serper: "settings.webSearchProviderSerper",
-  tavily: "settings.webSearchProviderTavily",
   zhipu: "settings.webSearchProviderZhipu",
 };
 
 const PROVIDER_ICON_PATH_MAP: Record<string, string> = {
-  brave: "/provider-icons/web-search/brave.svg",
   deepseek: "/provider-icons/web-search/deepseek.svg",
-  exa: "/provider-icons/web-search/exa.svg",
-  jina: "/provider-icons/web-search/jina.svg",
-  perplexity: "/provider-icons/web-search/perplexity.svg",
   searxng: "/provider-icons/web-search/searxng.svg",
-  serper: "/provider-icons/web-search/serper.svg",
-  tavily: "/provider-icons/web-search/tavily.svg",
   zhipu: "/provider-icons/web-search/zhipu.svg",
 };
 const MASKED_API_KEY_VALUE = "••••••••";

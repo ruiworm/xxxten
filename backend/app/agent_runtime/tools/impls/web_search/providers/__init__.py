@@ -1,33 +1,24 @@
-"""联网搜索 provider 注册表。"""
+"""联网搜索 provider 注册表。
+
+只保留国内可用的四家：ddgs（免密钥）、deepseek、智谱、searxng（自建）。
+其余海外服务（brave / exa / jina / perplexity / serper / tavily）已移除，
+它们需要境外账号或付费密钥，且会把各自的 SDK 拖进启动流程。
+"""
 
 from __future__ import annotations
 
 from app.agent_runtime.tools.impls.web_search.providers.base import WebSearchProvider
-from app.agent_runtime.tools.impls.web_search.providers.brave import BraveProvider
 from app.agent_runtime.tools.impls.web_search.providers.ddgs import DdgsProvider
 from app.agent_runtime.tools.impls.web_search.providers.deepseek import DeepSeekProvider
-from app.agent_runtime.tools.impls.web_search.providers.exa import ExaProvider
-from app.agent_runtime.tools.impls.web_search.providers.jina import JinaProvider
-from app.agent_runtime.tools.impls.web_search.providers.perplexity import (
-    PerplexityProvider,
-)
 from app.agent_runtime.tools.impls.web_search.providers.searxng import SearxngProvider
-from app.agent_runtime.tools.impls.web_search.providers.serper import SerperProvider
-from app.agent_runtime.tools.impls.web_search.providers.tavily import TavilyProvider
 from app.agent_runtime.tools.impls.web_search.providers.zhipu import ZhipuProvider
 
 PROVIDERS: dict[str, type[WebSearchProvider]] = {
     provider_cls.name: provider_cls
     for provider_cls in (
-        BraveProvider,
         DdgsProvider,
         DeepSeekProvider,
-        ExaProvider,
-        JinaProvider,
-        PerplexityProvider,
         SearxngProvider,
-        SerperProvider,
-        TavilyProvider,
         ZhipuProvider,
     )
 }
@@ -64,15 +55,9 @@ DDGS_BACKENDS = (
 )
 
 _PROVIDER_FIELD_SPECS: dict[str, tuple[tuple[str, str, bool, tuple[str, ...]], ...]] = {
-    "brave": (),
     "ddgs": (("ddgs_backend", "select", False, DDGS_BACKENDS),),
     "deepseek": (),
-    "exa": (),
-    "jina": (("jina_base_url", "text", False, ()),),
-    "perplexity": (),
     "searxng": (("searxng_base_url", "text", True, ()),),
-    "serper": (),
-    "tavily": (),
     "zhipu": (
         ("zhipu_search_engine", "select", False, ZHIPU_SEARCH_ENGINES),
     ),

@@ -29,15 +29,9 @@ async def test_get_web_search_settings_default(client: AsyncClient) -> None:
     assert data["enabled"] is False
     assert data["provider"] == ""
     assert data["has_api_keys"] == {
-        "brave": False,
         "ddgs": False,
         "deepseek": False,
-        "exa": False,
-        "jina": False,
-        "perplexity": False,
         "searxng": False,
-        "serper": False,
-        "tavily": False,
         "zhipu": False,
     }
     assert data["max_results"] == 10
@@ -56,21 +50,15 @@ async def test_get_web_search_providers(client: AsyncClient) -> None:
     names = [item["name"] for item in data]
     assert names == sorted(names)
     assert names == [
-        "brave",
         "ddgs",
         "deepseek",
-        "exa",
-        "jina",
-        "perplexity",
         "searxng",
-        "serper",
-        "tavily",
         "zhipu",
     ]
     by_name = {item["name"]: item for item in data}
     assert by_name["ddgs"]["requires_api_key"] is False
     assert by_name["searxng"]["requires_api_key"] is False
-    assert by_name["tavily"]["requires_api_key"] is True
+    assert by_name["zhipu"]["requires_api_key"] is True
 
 
 @pytest.mark.asyncio
@@ -80,7 +68,7 @@ async def test_update_web_search_settings(client: AsyncClient, session: AsyncSes
         "/api/v1/settings/web-search",
         json={
             "enabled": True,
-            "provider": "tavily",
+            "provider": "deepseek",
             "api_key": "secret-key",
             "max_results": 12,
             "domain_filters": [" Example.com ", "", "example.com"],
@@ -92,9 +80,9 @@ async def test_update_web_search_settings(client: AsyncClient, session: AsyncSes
     assert response.status_code == 200
     data = response.json()
     assert data["enabled"] is True
-    assert data["provider"] == "tavily"
-    assert data["has_api_keys"]["tavily"] is True
-    assert data["has_api_keys"]["serper"] is False
+    assert data["provider"] == "deepseek"
+    assert data["has_api_keys"]["deepseek"] is True
+    assert data["has_api_keys"]["zhipu"] is False
     assert data["max_results"] == 12
     assert data["domain_filters"] == ["example.com"]
     assert data["trust_proxy_environment"] is False
@@ -106,8 +94,8 @@ async def test_update_web_search_settings(client: AsyncClient, session: AsyncSes
     assert "secret-key" not in setting.value
     config = parse_web_search_settings(setting.value)
     assert config.enabled is True
-    assert config.provider == "tavily"
-    assert config.api_keys == {"tavily": "secret-key"}
+    assert config.provider == "deepseek"
+    assert config.api_keys == {"deepseek": "secret-key"}
     assert config.max_results == 12
     assert config.domain_filters == ["example.com"]
     assert config.trust_proxy_environment is False
@@ -122,17 +110,17 @@ async def test_update_web_search_settings_keeps_api_key_when_omitted(
     """api_key 不传时保持原有 Key 不变。"""
     await client.put(
         "/api/v1/settings/web-search",
-        json={"enabled": True, "provider": "serper", "api_key": "keep-me"},
+        json={"enabled": True, "provider": "zhipu", "api_key": "keep-me"},
     )
     response = await client.put(
         "/api/v1/settings/web-search",
-        json={"enabled": False, "provider": "serper"},
+        json={"enabled": False, "provider": "zhipu"},
     )
     assert response.status_code == 200
-    assert response.json()["has_api_keys"]["serper"] is True
+    assert response.json()["has_api_keys"]["zhipu"] is True
 
     setting = await setting_repo.get_by_key(session, SETTING_KEY_WEB_SEARCH_CONFIG)
-    assert parse_web_search_settings(setting.value).api_keys == {"serper": "keep-me"}
+    assert parse_web_search_settings(setting.value).api_keys == {"zhipu": "keep-me"}
 
 
 @pytest.mark.asyncio
@@ -142,25 +130,25 @@ async def test_update_web_search_settings_keeps_api_keys_separate_per_provider(
     """不同 provider 的 API Key 应分别保存，切换 provider 不覆盖旧 Key。"""
     await client.put(
         "/api/v1/settings/web-search",
-        json={"provider": "tavily", "api_key": "tavily-key"},
+        json={"provider": "deepseek", "api_key": "deepseek-key"},
     )
     await client.put(
         "/api/v1/settings/web-search",
-        json={"provider": "serper", "api_key": "serper-key"},
+        json={"provider": "zhipu", "api_key": "zhipu-key"},
     )
     response = await client.put(
         "/api/v1/settings/web-search",
-        json={"provider": "tavily"},
+        json={"provider": "deepseek"},
     )
 
     assert response.status_code == 200
-    assert response.json()["has_api_keys"]["tavily"] is True
-    assert response.json()["has_api_keys"]["serper"] is True
+    assert response.json()["has_api_keys"]["deepseek"] is True
+    assert response.json()["has_api_keys"]["zhipu"] is True
 
     setting = await setting_repo.get_by_key(session, SETTING_KEY_WEB_SEARCH_CONFIG)
     assert parse_web_search_settings(setting.value).api_keys == {
-        "tavily": "tavily-key",
-        "serper": "serper-key",
+        "deepseek": "deepseek-key",
+        "zhipu": "zhipu-key",
     }
 
 
@@ -171,14 +159,14 @@ async def test_update_web_search_settings_clears_api_key_with_empty_string(
     """api_key 传空字符串时清除原有 Key。"""
     await client.put(
         "/api/v1/settings/web-search",
-        json={"enabled": True, "provider": "serper", "api_key": "clear-me"},
+        json={"enabled": True, "provider": "zhipu", "api_key": "clear-me"},
     )
     response = await client.put(
         "/api/v1/settings/web-search",
-        json={"provider": "serper", "api_key": ""},
+        json={"provider": "zhipu", "api_key": ""},
     )
     assert response.status_code == 200
-    assert response.json()["has_api_keys"]["serper"] is False
+    assert response.json()["has_api_keys"]["zhipu"] is False
 
     setting = await setting_repo.get_by_key(session, SETTING_KEY_WEB_SEARCH_CONFIG)
     assert parse_web_search_settings(setting.value).api_keys == {}
@@ -190,7 +178,7 @@ async def test_switching_to_provider_without_api_key_preserves_other_keys(
 ) -> None:
     await client.put(
         "/api/v1/settings/web-search",
-        json={"provider": "tavily", "api_key": "keep-me"},
+        json={"provider": "deepseek", "api_key": "keep-me"},
     )
     response = await client.put(
         "/api/v1/settings/web-search",
@@ -198,10 +186,10 @@ async def test_switching_to_provider_without_api_key_preserves_other_keys(
     )
 
     assert response.status_code == 200
-    assert response.json()["has_api_keys"]["tavily"] is True
+    assert response.json()["has_api_keys"]["deepseek"] is True
 
     setting = await setting_repo.get_by_key(session, SETTING_KEY_WEB_SEARCH_CONFIG)
-    assert parse_web_search_settings(setting.value).api_keys == {"tavily": "keep-me"}
+    assert parse_web_search_settings(setting.value).api_keys == {"deepseek": "keep-me"}
 
 
 @pytest.mark.asyncio
@@ -237,24 +225,24 @@ async def test_update_web_search_settings_filters_unknown_extras(
 
 
 @pytest.mark.asyncio
-async def test_update_web_search_settings_accepts_jina_base_url(
+async def test_update_web_search_settings_accepts_searxng_base_url(
     client: AsyncClient, session: AsyncSession
 ) -> None:
     response = await client.put(
         "/api/v1/settings/web-search",
         json={
             "enabled": True,
-            "provider": "jina",
-            "extras": {"jina_base_url": "https://eu.s.jina.ai/"},
+            "provider": "searxng",
+            "extras": {"searxng_base_url": "https://searx.example.com"},
         },
     )
 
     assert response.status_code == 200
-    assert response.json()["extras"] == {"jina_base_url": "https://eu.s.jina.ai/"}
+    assert response.json()["extras"] == {"searxng_base_url": "https://searx.example.com"}
 
     setting = await setting_repo.get_by_key(session, SETTING_KEY_WEB_SEARCH_CONFIG)
     assert json.loads(setting.value)["extras"] == {
-        "jina_base_url": "https://eu.s.jina.ai/"
+        "searxng_base_url": "https://searx.example.com"
     }
 
 
@@ -273,7 +261,7 @@ async def test_update_web_search_settings_switching_provider_clears_extras(
     )
     response = await client.put(
         "/api/v1/settings/web-search",
-        json={"provider": "tavily"},
+        json={"provider": "deepseek"},
     )
     assert response.status_code == 200
     assert response.json()["extras"] == {}
