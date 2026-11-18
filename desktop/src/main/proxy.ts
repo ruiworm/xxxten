@@ -3,7 +3,6 @@ import { appendLog } from "./logging.js";
 
 const configuredSessions = new WeakMap<Session, Promise<void>>();
 const LOCAL_BYPASS_HOSTS = ["localhost", "127.0.0.1"];
-const SYSTEM_PROXY_BYPASS_RULES = "<local>,127.0.0.1/8";
 const INVALID_NO_PROXY_HOSTS = new Set(["::1", "[::1]"]);
 
 export function configureSystemProxy(targetSession: Session): Promise<void> {

@@ -16,7 +16,6 @@ import { ensurePortablePython, resolveRuntimeDir } from "./runtime/python.js";
 import { ensureNovelForgeRuntime, startLocalNovelForgeBackend } from "./runtime/openfic.js";
 import { forceStopBackendProcess, stopBackendProcess, type BackendProcessHandle } from "./process.js";
 import { resolveDataDir } from "./data-location.js";
-import { initializeUpdater } from "./updater.js";
 import { configureDefaultSystemProxy } from "./proxy.js";
 import { createStartupProgressTracker, type StartupProgressTracker } from "./startup-progress.js";
 import { IpcChannels } from "../shared/ipc.js";

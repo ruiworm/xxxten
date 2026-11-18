@@ -454,21 +454,6 @@ export function App() {
     enterFrontend(requestId);
   };
 
-  const handleShowSetup = (target: SetupInitialStep = "mode") => {
-    setError(null);
-    setSetupInitialStep(target);
-    setSetupInitialInstallDir(null);
-    setSetupInitialRemoteUrl(null);
-    setShellState("setup");
-  };
-
-  const handleOpenDataManagement = () => {
-    setError(null);
-    setDataManagementPrevState(shellState);
-    setDataManagementInstanceId(shellState === "frontend" ? activeInstanceId : null);
-    setShellState("data");
-  };
-
   const handleOpenDataManagementFor = (instanceId: string) => {
     setError(null);
     setDataManagementPrevState(shellState);
@@ -485,11 +470,6 @@ export function App() {
       return;
     }
     setShellState(prevState);
-  };
-
-  const handleAddInstance = () => {
-    const hasLocalInstance = config?.instances.some((instance) => instance.mode === "local") ?? false;
-    handleShowSetup(hasLocalInstance ? "remote" : "mode");
   };
 
   const handleRequestDeleteInstance = (instanceId: string) => {
@@ -660,13 +640,6 @@ export function App() {
     }
   };
 
-  const handleSaveConfig = async (nextConfig: DesktopConfig) => {
-    await window.openficDesktop.saveConfig(nextConfig);
-    setConfig(nextConfig);
-    setActiveInstanceId(nextConfig.activeInstanceId);
-    setShellAppearance(getShellAppearance(nextConfig, nextConfig.activeInstanceId));
-  };
-
   useEffect(() => {
     if (!canCheckForUpdates) setUpdateDialogOpen(false);
   }, [canCheckForUpdates]);
@@ -739,16 +712,10 @@ export function App() {
       style={shellStyle}
     >
       <DesktopHeader
-        config={config}
-        disabled={shellState === "booting"}
         canGoBack={shellState === "frontend" && webviewNavigation.canGoBack}
         canGoForward={shellState === "frontend" && webviewNavigation.canGoForward}
         onGoBack={() => handleWebviewNavigation("back")}
         onGoForward={() => handleWebviewNavigation("forward")}
-        onAddInstance={handleAddInstance}
-        onOpenSetup={() => handleShowSetup()}
-        onOpenDataManagement={handleOpenDataManagement}
-        onSaveConfig={handleSaveConfig}
       />
       <section className="desktop-content">
         {shellState === "booting" ? (
