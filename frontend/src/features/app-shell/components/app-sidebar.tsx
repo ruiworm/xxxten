@@ -415,26 +415,19 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
             <MotionFlex
               layout
               mt="auto"
-              direction="column"
+              direction={isMobile || isExpanded ? "row" : "column"}
               align="center"
-              gap="1"
+              justify={isMobile || isExpanded ? "end" : "center"}
+              gap={isMobile || isExpanded ? "0" : "1"}
               width="100%"
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
             >
-              {/* 全局页面入口固定在底部，紧贴语言/主题/设置上方 */}
+              {/* 全局页面入口：展开时收成一排图标，和语言/主题/设置并排贴底 */}
               <SidebarNav
                 items={utilityNavItems}
-                isExpanded={isMobile || isExpanded}
-              />
-
-              <MotionFlex
-                layout
+                isExpanded={false}
                 direction={isMobile || isExpanded ? "row" : "column"}
-                align="center"
-                justify={isMobile || isExpanded ? "end" : "center"}
-                gap="1"
-                width="100%"
-                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              >
+              />
                 <SidebarActions
                   appearance={appearance}
                   themeMode={themeMode}
@@ -459,7 +452,6 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
                   onToggleTheme={handleThemeToggle}
                   onOpenSettings={handleOpenSettings}
                 />
-              </MotionFlex>
             </MotionFlex>
           </Flex>
         </MotionBox>

@@ -14,9 +14,19 @@ const MotionFlex = motion.create(Flex);
 interface SidebarNavProps {
   items: AppSidebarNavItem[];
   isExpanded: boolean;
+  /** 展开态可以把图标排成一行，塞进底部的工具条里 */
+  direction?: "row" | "column";
 }
 
-function SidebarNavItem({ item, isExpanded }: { item: AppSidebarNavItem; isExpanded: boolean }) {
+function SidebarNavItem({
+  item,
+  isExpanded,
+  inline,
+}: {
+  item: AppSidebarNavItem;
+  isExpanded: boolean;
+  inline: boolean;
+}) {
   const Icon = item.icon;
   const content = (
     <MotionFlex
@@ -93,24 +103,28 @@ function SidebarNavItem({ item, isExpanded }: { item: AppSidebarNavItem; isExpan
       content={item.label}
       side="right"
     >
-      <Box width="100%">{linked}</Box>
+      <Box width={inline ? "auto" : "100%"}>{linked}</Box>
     </Tooltip>
   );
 }
 
-export function SidebarNav({ items, isExpanded }: SidebarNavProps) {
+export function SidebarNav({ items, isExpanded, direction = "column" }: SidebarNavProps) {
+  const inline = direction === "row";
+
   return (
     <Flex
-      direction="column"
+      direction={direction}
       align="center"
-      gap="1"
-      width="100%"
+      gap={inline ? "0" : "1"}
+      width={inline ? "auto" : "100%"}
+      style={inline ? { flexShrink: 0 } : undefined}
     >
       {items.map((item) => (
         <SidebarNavItem
           key={item.href}
           item={item}
           isExpanded={isExpanded}
+          inline={inline}
         />
       ))}
     </Flex>
