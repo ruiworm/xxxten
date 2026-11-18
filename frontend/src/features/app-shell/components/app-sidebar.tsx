@@ -151,39 +151,46 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
     };
   }, [currentProject, queryClient]);
 
-  const navItems = useMemo<AppSidebarNavItem[]>(() => {
-    const pathname = location.pathname;
+  const pathname = location.pathname;
 
-    const items: AppSidebarNavItem[] = [
+  /** 常驻顶部：项目库 */
+  const primaryNavItems = useMemo<AppSidebarNavItem[]>(
+    () => [
       {
         label: t("topbar.projects"),
         href: "/",
         icon: LibraryBig,
         active: pathname === "/",
       },
+    ],
+    [pathname, t],
+  );
+
+  /**
+   * 项目内才出现的两项。世界观与角色属于某个项目，
+   * 项目库、仪表盘、提示词链这些全局页面没有当前项目，一律不显示。
+   */
+  const projectNavItems = useMemo<AppSidebarNavItem[]>(() => {
+    if (!projectId) return [];
+    return [
+      {
+        label: t("topbar.workspace"),
+        href: `/projects/${projectId}/world-info`,
+        icon: Globe,
+        active: pathname.endsWith("/world-info"),
+      },
+      {
+        label: t("topbar.characters"),
+        href: `/projects/${projectId}/characters`,
+        icon: UserRound,
+        active: pathname.endsWith("/characters"),
+      },
     ];
+  }, [pathname, projectId, t]);
 
-    // 世界观与角色只属于某个项目，仅在项目作用域路由里出现。
-    // 项目库、仪表盘、提示词链这些全局页面没有当前项目，一律不显示，
-    // 避免「看起来它是全局功能」的误解。
-    if (projectId) {
-      items.push(
-        {
-          label: t("topbar.workspace"),
-          href: `/projects/${projectId}/world-info`,
-          icon: Globe,
-          active: pathname.endsWith("/world-info"),
-        },
-        {
-          label: t("topbar.characters"),
-          href: `/projects/${projectId}/characters`,
-          icon: UserRound,
-          active: pathname.endsWith("/characters"),
-        },
-      );
-    }
-
-    items.push(
+  /** 底部工具区：与项目无关的全局页面，紧贴语言/主题/设置上方 */
+  const utilityNavItems = useMemo<AppSidebarNavItem[]>(
+    () => [
       {
         label: t("topbar.promptChains"),
         href: "/prompt-chains",
@@ -196,10 +203,9 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
         icon: ChartNoAxesCombined,
         active: pathname.startsWith("/dashboard"),
       },
-    );
-
-    return items;
-  }, [location.pathname, projectId, t]);
+    ],
+    [pathname, t],
+  );
 
   const handleLanguageChange = async (language: string) => {
     const nextLanguage = language as LanguageCode;
@@ -374,9 +380,28 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
             </Box>
 
             <SidebarNav
-              items={navItems}
+              items={primaryNavItems}
               isExpanded={isMobile || isExpanded}
             />
+
+            {/* 进入项目时把这两项「弹」出来，离开项目时收回 */}
+            <AnimatePresence initial={false}>
+              {projectNavItems.length > 0 ? (
+                <MotionBox
+                  key="project-nav"
+                  initial={{ opacity: 0, height: 0, y: -4 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -4 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.7 }}
+                  style={{ width: "100%", overflow: "hidden" }}
+                >
+                  <SidebarNav
+                    items={projectNavItems}
+                    isExpanded={isMobile || isExpanded}
+                  />
+                </MotionBox>
+              ) : null}
+            </AnimatePresence>
 
             <RecentProjectsNav
               projects={recentProjects}
@@ -390,37 +415,51 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
             <MotionFlex
               layout
               mt="auto"
-              direction={isMobile || isExpanded ? "row" : "column"}
+              direction="column"
               align="center"
-              justify={isMobile || isExpanded ? "end" : "center"}
               gap="1"
               width="100%"
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
             >
-              <SidebarActions
-                appearance={appearance}
-                themeMode={themeMode}
+              {/* 全局页面入口固定在底部，紧贴语言/主题/设置上方 */}
+              <SidebarNav
+                items={utilityNavItems}
                 isExpanded={isMobile || isExpanded}
-                shouldAnimateTheme={shouldAnimateTheme}
-                languageLabel={t("topbar.language")}
-                settingsLabel={t("topbar.settings")}
-                toggleThemeLabel={t("topbar.toggleTheme")}
-                themeTooltip={
-                  themeMode === "system"
-                    ? t("topbar.toggleLightMode")
-                    : themeMode === "light"
-                      ? t("topbar.toggleDarkMode")
-                      : t("topbar.toggleSystemMode")
-                }
-                languages={supportedLanguages.map((lang) => ({
-                  code: lang.code,
-                  name: lang.name,
-                }))}
-                currentLanguage={i18n.language}
-                onLanguageChange={handleLanguageChange}
-                onToggleTheme={handleThemeToggle}
-                onOpenSettings={handleOpenSettings}
               />
+
+              <MotionFlex
+                layout
+                direction={isMobile || isExpanded ? "row" : "column"}
+                align="center"
+                justify={isMobile || isExpanded ? "end" : "center"}
+                gap="1"
+                width="100%"
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <SidebarActions
+                  appearance={appearance}
+                  themeMode={themeMode}
+                  isExpanded={isMobile || isExpanded}
+                  shouldAnimateTheme={shouldAnimateTheme}
+                  languageLabel={t("topbar.language")}
+                  settingsLabel={t("topbar.settings")}
+                  toggleThemeLabel={t("topbar.toggleTheme")}
+                  themeTooltip={
+                    themeMode === "system"
+                      ? t("topbar.toggleLightMode")
+                      : themeMode === "light"
+                        ? t("topbar.toggleDarkMode")
+                        : t("topbar.toggleSystemMode")
+                  }
+                  languages={supportedLanguages.map((lang) => ({
+                    code: lang.code,
+                    name: lang.name,
+                  }))}
+                  currentLanguage={i18n.language}
+                  onLanguageChange={handleLanguageChange}
+                  onToggleTheme={handleThemeToggle}
+                  onOpenSettings={handleOpenSettings}
+                />
+              </MotionFlex>
             </MotionFlex>
           </Flex>
         </MotionBox>
