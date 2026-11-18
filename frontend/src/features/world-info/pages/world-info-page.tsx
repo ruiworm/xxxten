@@ -11,7 +11,7 @@ import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel, Group, Separator } from "react-resizable-panels";
-import { useSearchParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 
 import "./world-info-page.css";
 
@@ -71,6 +71,8 @@ function generateUniqueEntryName(baseName: string, entries: WorldInfoEntryBrief[
 export function WorldInfoPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { projectId: routeProjectId } = useParams<{ projectId: string }>();
   const queryClient = useQueryClient();
   const { closeAssistantSidebar, isMobile, openAssistantSidebar } = useAppShell();
 
@@ -115,13 +117,12 @@ export function WorldInfoPage() {
 
   // 从 URL 参数初始化状态
   useEffect(() => {
-    const projectId = searchParams.get("projectId");
     const from = searchParams.get("from");
 
-    if (from === "writing" && projectId) {
-      setFromWriting(true, projectId);
+    if (from === "writing" && routeProjectId) {
+      setFromWriting(true, routeProjectId);
     }
-  }, [searchParams, setFromWriting]);
+  }, [routeProjectId, searchParams, setFromWriting]);
 
   const { data: projectsData } = useQuery({
     queryKey: ["projects", "world-info-page"],
@@ -129,7 +130,7 @@ export function WorldInfoPage() {
   });
 
   const projects = useMemo(() => projectsData?.items ?? [], [projectsData?.items]);
-  const projectIdFromUrl = searchParams.get("projectId");
+  const projectIdFromUrl = routeProjectId;
 
   const hasInitializedProjectRef = useRef(false);
 
@@ -157,6 +158,27 @@ export function WorldInfoPage() {
   useEffect(() => {
     if (currentProjectId) void setPreference(LAST_PROJECT_KEY, currentProjectId);
   }, [currentProjectId]);
+
+  // 地址栏是项目归属的唯一来源：直接打开书签或浏览器前进后退时，以路由参数为准
+  const currentProjectIdRef = useRef(currentProjectId);
+  currentProjectIdRef.current = currentProjectId;
+
+  useEffect(() => {
+    if (!routeProjectId || routeProjectId === currentProjectIdRef.current) return;
+    setCurrentProject(routeProjectId);
+  }, [routeProjectId, setCurrentProject]);
+
+  // 页内用项目选择器切换项目时，把地址栏同步过去，保证导航和书签都指向当前项目。
+  // 只在「用户主动切换」时导航：内存值从地址栏的那个项目变成了别的项目。
+  const prevProjectForUrlRef = useRef(currentProjectId);
+
+  useEffect(() => {
+    const previousProjectId = prevProjectForUrlRef.current;
+    prevProjectForUrlRef.current = currentProjectId;
+    if (!currentProjectId || currentProjectId === routeProjectId) return;
+    if (previousProjectId !== routeProjectId) return;
+    navigate(`/projects/${currentProjectId}/world-info`, { replace: true });
+  }, [currentProjectId, navigate, routeProjectId]);
 
   const { data: projectWorldInfo } = useQuery({
     queryKey: ["world-info-by-project", currentProjectId],

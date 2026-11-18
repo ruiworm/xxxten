@@ -8,6 +8,7 @@ import App from "./App.tsx";
 import { AppCrashFallback, GlobalLoading, toast } from "./components";
 import { Toaster } from "./components/toaster";
 import { AppLayout } from "./features/app-shell";
+import { LegacyProjectRedirect } from "./features/app-shell/components/legacy-project-redirect";
 import { AuthPage } from "./features/auth";
 import { CharactersPage } from "./features/characters";
 import { PromptChainsPage } from "./features/prompt-chains";
@@ -219,12 +220,20 @@ function AppContent({
             element={<WritingPage />}
           />
           <Route
-            path="/world-info"
+            path="/projects/:projectId/world-info"
             element={<WorldInfoPage />}
           />
           <Route
-            path="/characters"
+            path="/projects/:projectId/characters"
             element={<CharactersPage />}
+          />
+          <Route
+            path="/world-info"
+            element={<LegacyProjectRedirect segment="world-info" />}
+          />
+          <Route
+            path="/characters"
+            element={<LegacyProjectRedirect segment="characters" />}
           />
           <Route
             path="/prompt-chains"

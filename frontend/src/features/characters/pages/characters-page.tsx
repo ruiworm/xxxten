@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Group, Panel, Separator } from "react-resizable-panels";
-import { useSearchParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 
 import { PanelLayoutLoading } from "@/components";
 import { toast } from "@/components/toast";
@@ -66,7 +66,8 @@ function sortCharacters(characters: CharacterListItem[]): CharacterListItem[] {
 
 export function CharactersPage() {
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { projectId: routeProjectId } = useParams<{ projectId: string }>();
   const queryClient = useQueryClient();
   const { isMobile, openAssistantSidebar } = useAppShell();
   const {
@@ -109,7 +110,7 @@ export function CharactersPage() {
   useEffect(() => {
     const initProject = async () => {
       if (currentProjectId || projects.length === 0) return;
-      const projectIdFromUrl = searchParams.get("projectId");
+      const projectIdFromUrl = routeProjectId;
       const cachedProjectId = await getPreference(LAST_PROJECT_KEY);
       const nextProjectId =
         (projectIdFromUrl && projects.some((project) => project.id === projectIdFromUrl)
@@ -124,11 +125,32 @@ export function CharactersPage() {
     };
 
     void initProject();
-  }, [currentProjectId, projects, searchParams, setCurrentProject]);
+  }, [currentProjectId, projects, routeProjectId, setCurrentProject]);
 
   useEffect(() => {
     if (currentProjectId) void setPreference(LAST_PROJECT_KEY, currentProjectId);
   }, [currentProjectId]);
+
+  // 地址栏是项目归属的唯一来源：直接打开书签或浏览器前进后退时，以路由参数为准
+  const currentProjectIdRef = useRef(currentProjectId);
+  currentProjectIdRef.current = currentProjectId;
+
+  useEffect(() => {
+    if (!routeProjectId || routeProjectId === currentProjectIdRef.current) return;
+    setCurrentProject(routeProjectId);
+  }, [routeProjectId, setCurrentProject]);
+
+  // 页内切换项目时同步地址栏，保证导航与书签都指向当前项目。
+  // 只在「用户主动切换」时导航：内存值从地址栏的那个项目变成了别的项目。
+  const prevProjectForUrlRef = useRef(currentProjectId);
+
+  useEffect(() => {
+    const previousProjectId = prevProjectForUrlRef.current;
+    prevProjectForUrlRef.current = currentProjectId;
+    if (!currentProjectId || currentProjectId === routeProjectId) return;
+    if (previousProjectId !== routeProjectId) return;
+    navigate(`/projects/${currentProjectId}/characters`, { replace: true });
+  }, [currentProjectId, navigate, routeProjectId]);
 
   useEffect(() => {
     if (skipCharacterRestoreProjectIdRef.current !== currentProjectId) {

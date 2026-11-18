@@ -153,6 +153,13 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
 
   const navItems = useMemo<AppSidebarNavItem[]>(() => {
     const pathname = location.pathname;
+    // 世界观与角色是项目内的数据：
+    // - 在项目作用域路由里用路由参数
+    // - 在统计 / 提示词链这类全局页沿用最近打开的项目，避免导航里出现死路
+    // - 项目库页面不显示，让「这两个入口属于某个项目」这件事一眼可辨
+    const lastOpenedProjectId = recentProjects[0]?.projectId ?? null;
+    const navProjectId = projectId ?? (pathname === "/" ? null : lastOpenedProjectId);
+
     const items: AppSidebarNavItem[] = [
       {
         label: t("topbar.projects"),
@@ -160,18 +167,26 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
         icon: LibraryBig,
         active: pathname === "/",
       },
-      {
-        label: t("topbar.workspace"),
-        href: "/world-info",
-        icon: Globe,
-        active: pathname.startsWith("/world-info"),
-      },
-      {
-        label: t("topbar.characters"),
-        href: "/characters",
-        icon: UserRound,
-        active: pathname.startsWith("/characters"),
-      },
+    ];
+
+    if (navProjectId) {
+      items.push(
+        {
+          label: t("topbar.workspace"),
+          href: `/projects/${navProjectId}/world-info`,
+          icon: Globe,
+          active: pathname.endsWith("/world-info"),
+        },
+        {
+          label: t("topbar.characters"),
+          href: `/projects/${navProjectId}/characters`,
+          icon: UserRound,
+          active: pathname.endsWith("/characters"),
+        },
+      );
+    }
+
+    items.push(
       {
         label: t("topbar.promptChains"),
         href: "/prompt-chains",
@@ -184,10 +199,10 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
         icon: ChartNoAxesCombined,
         active: pathname.startsWith("/dashboard"),
       },
-    ];
+    );
 
     return items;
-  }, [location.pathname, t]);
+  }, [location.pathname, projectId, recentProjects, t]);
 
   const handleLanguageChange = async (language: string) => {
     const nextLanguage = language as LanguageCode;
