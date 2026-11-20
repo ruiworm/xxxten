@@ -26,18 +26,8 @@ export const IpcChannels = {
   reloadWindow: "window:reload",
   toggleDevTools: "window:toggle-dev-tools",
   closeWindow: "window:close",
-  getUpdateState: "update:get-state",
-  checkForUpdate: "update:check",
-  downloadUpdate: "update:download",
-  cancelUpdateDownload: "update:cancel-download",
-  installUpdate: "update:install",
-  openUpdateRelease: "update:open-release",
-  updateState: "update:state",
   exportLogs: "logs:export",
   logFrontendDiagnostic: "logs:frontend-diagnostic",
-  openProjectHome: "help:open-project-home",
-  reportBug: "help:report-bug",
-  suggestFeature: "help:suggest-feature",
   openOpenAICodexAuthorization: "auth:open-openai-codex-authorization",
   getZoomFactor: "zoom:get-factor",
   saveZoomFactor: "zoom:save-factor",
@@ -186,19 +176,6 @@ export interface StartupProgressEvent {
   maintenanceVmOps?: number | null;
   /** Backend maintenance elapsed seconds, shown as text detail. */
   maintenanceElapsedSeconds?: number | null;
-}
-
-export type UpdateStatus = "unsupported" | "idle" | "checking" | "available" | "downloading" | "downloaded" | "not-available" | "error";
-
-export interface UpdateState {
-  status: UpdateStatus;
-  version?: string;
-  releaseNotes?: string;
-  progress?: number;
-  transferred?: number;
-  total?: number;
-  bytesPerSecond?: number;
-  message?: string;
 }
 
 export interface DataInfo {

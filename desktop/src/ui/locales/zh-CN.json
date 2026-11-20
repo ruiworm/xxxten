@@ -58,24 +58,7 @@
     "closeWindow": "关闭"
   },
   "notices": {
-    "releaseNotesFallback": "本次更新包含稳定性改进与体验优化。",
-    "closeCompatibilityWarning": "关闭兼容性提示",
-    "closeUpdatePanel": "关闭更新面板",
-    "closeUpdateNotice": "关闭更新提示",
-    "updateChecking": "正在检查更新",
-    "updateCheckingDescription": "正在连接更新服务，请稍候。",
-    "appUpToDate": "已是最新版本",
-    "appUpToDateDescription": "当前安装的 NovelForge 已是最新版本。",
-    "updateFound": "发现新版本",
-    "releaseNotes": "更新日志",
-    "viewDetails": "查看详情",
-    "startDownload": "开始下载",
-    "downloading": "下载中",
-    "downloadProgress": "下载进度 {{progress}}%",
-    "restartAndInstall": "重启并安装",
-    "updateCheckFailed": "检查更新失败",
-    "updateServiceUnavailable": "更新服务暂时不可用。",
-    "retry": "重试"
+    "closeCompatibilityWarning": "关闭兼容性提示"
   },
   "startup": {
     "preparingApp": "正在准备 NovelForge",

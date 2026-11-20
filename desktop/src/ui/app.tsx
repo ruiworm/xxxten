@@ -9,7 +9,7 @@ import { FrontendPage, type FrontendWebviewElement } from "./pages/frontend/page
 import { SetupPage } from "./pages/setup/page";
 import i18n, { isDesktopLanguage } from "./i18n";
 import { isDesktopInstanceAppearance, type DesktopAppearance, type DesktopConfig, type DesktopInstanceAppearance } from "../shared/config";
-import type { StartupProgressEvent, UpdateState } from "../shared/ipc";
+import type { StartupProgressEvent } from "../shared/ipc";
 
 type ShellState = "booting" | "setup" | "frontend" | "data";
 type SetupInitialStep = "mode" | "remote" | "local-directory" | "local-success";
@@ -197,8 +197,6 @@ export function App() {
   const [shellAppearance, setShellAppearance] = useState<ShellAppearance>({ appearance: "light" });
   const [compatibilityWarning, setCompatibilityWarning] = useState<string | null>(null);
   const [maintenanceWarning, setMaintenanceWarning] = useState<string | null>(null);
-  const [updateState, setUpdateState] = useState<UpdateState>({ status: "idle" });
-  const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [deletionInstanceId, setDeletionInstanceId] = useState<string | null>(null);
   const [accessKeyInstanceId, setAccessKeyInstanceId] = useState<string | null>(null);
   const [dataManagementPrevState, setDataManagementPrevState] = useState<ShellState | null>(null);
@@ -206,14 +204,11 @@ export function App() {
   const [startupProgress, setStartupProgress] = useState<StartupProgressEvent | null>(null);
   const [frontendWebview, setFrontendWebview] = useState<FrontendWebviewElement | null>(null);
   const [webviewNavigation, setWebviewNavigation] = useState<WebviewNavigationState>(EMPTY_WEBVIEW_NAVIGATION);
-  const lastAutoUpdateCheck = useRef<string | null>(null);
-  const automaticallyOpenedUpdate = useRef<string | null>(null);
   const startupRequestId = useRef(0);
   const activeInstance = config?.instances.find((instance) => instance.id === activeInstanceId) ?? null;
   const deletionInstance = config?.instances.find((instance) => instance.id === deletionInstanceId) ?? null;
   const accessKeyInstance = config?.instances.find((instance) => instance.id === accessKeyInstanceId) ?? null;
   const frontendPartition = activeInstanceId ? `persist:openfic-${activeInstanceId}` : "persist:openfic";
-  const canCheckForUpdates = shellState === "frontend" && activeInstance !== null && updateState.status !== "unsupported";
 
   useEffect(() => {
     let cancelled = false;
@@ -264,26 +259,6 @@ export function App() {
 
     void initialize();
 
-    return () => {
-      cancelled = true;
-      dispose();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!canCheckForUpdates || !activeInstanceId) return;
-    const runtimeKey = `${activeInstanceId}:${webviewKey}`;
-    if (lastAutoUpdateCheck.current === runtimeKey) return;
-    lastAutoUpdateCheck.current = runtimeKey;
-    void window.openficDesktop.checkForUpdate();
-  }, [activeInstanceId, canCheckForUpdates, webviewKey]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void window.openficDesktop.getUpdateState().then((state) => {
-      if (!cancelled) setUpdateState(state);
-    });
-    const dispose = window.openficDesktop.onUpdateState(setUpdateState);
     return () => {
       cancelled = true;
       dispose();
@@ -496,7 +471,6 @@ export function App() {
     setError(null);
     setCompatibilityWarning(null);
     setMaintenanceWarning(null);
-    setUpdateDialogOpen(false);
     setStartupProgress(null);
     setShellState("booting");
     try {
@@ -577,7 +551,6 @@ export function App() {
     const normalizedUrl = normalizeRemoteUrl(url);
     setError(null);
     setCompatibilityWarning(null);
-    setUpdateDialogOpen(false);
     setSetupInitialRemoteUrl(normalizedUrl);
     setStartupProgress(null);
     setShellState("booting");
@@ -620,7 +593,6 @@ export function App() {
     const requestId = ++startupRequestId.current;
     setError(null);
     setCompatibilityWarning(null);
-    setUpdateDialogOpen(false);
     setSetupInitialInstallDir(installDir);
     setStartupProgress(null);
     setShellState("booting");
@@ -640,10 +612,6 @@ export function App() {
     }
   };
 
-  useEffect(() => {
-    if (!canCheckForUpdates) setUpdateDialogOpen(false);
-  }, [canCheckForUpdates]);
-
   const handleWebviewNavigation = (direction: "back" | "forward") => {
     if (!frontendWebview) return;
 
@@ -659,23 +627,6 @@ export function App() {
       setWebviewNavigation(EMPTY_WEBVIEW_NAVIGATION);
     }
   };
-
-  useEffect(() => {
-    if (updateState.status !== "available") {
-      automaticallyOpenedUpdate.current = null;
-      return;
-    }
-    if (compatibilityWarning) {
-      automaticallyOpenedUpdate.current = null;
-      setUpdateDialogOpen(false);
-      return;
-    }
-
-    const updateKey = updateState.version ?? "available";
-    if (automaticallyOpenedUpdate.current === updateKey) return;
-    automaticallyOpenedUpdate.current = updateKey;
-    setUpdateDialogOpen(true);
-  }, [compatibilityWarning, updateState.status, updateState.version]);
 
   useEffect(() => {
     if (shellState !== "frontend") return;
@@ -760,15 +711,7 @@ export function App() {
       </section>
       <DesktopNotices
         compatibilityWarning={compatibilityWarning}
-        updateDialogOpen={updateDialogOpen}
-        updateState={updateState}
-        onCheckForUpdate={() => void window.openficDesktop.checkForUpdate()}
-        onDownloadUpdate={() => void window.openficDesktop.downloadUpdate()}
-        onCancelDownload={() => void window.openficDesktop.cancelUpdateDownload()}
-        onInstallUpdate={() => void window.openficDesktop.installUpdate()}
-        onOpenRelease={() => void window.openficDesktop.openUpdateRelease()}
         onCloseCompatibilityWarning={() => setCompatibilityWarning(null)}
-        onCloseUpdateDialog={() => setUpdateDialogOpen(false)}
       />
       <InstanceDeletionDialog
         key={deletionInstanceId ?? "closed"}

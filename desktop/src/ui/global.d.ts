@@ -13,7 +13,6 @@ import type {
   SaveInstanceAppearanceRequest,
   SetupProgressEvent,
   StartupProgressEvent,
-  UpdateState,
 } from "../shared/ipc";
 import type { DesktopInstance } from "../shared/config";
 
@@ -53,25 +52,15 @@ declare global {
       reloadWindow: () => Promise<void>;
       toggleDevTools: () => Promise<void>;
       closeWindow: () => Promise<void>;
-      getUpdateState: () => Promise<UpdateState>;
       getStartupProgress: () => Promise<StartupProgressEvent | null>;
-      checkForUpdate: () => Promise<void>;
-      downloadUpdate: () => Promise<void>;
-      cancelUpdateDownload: () => Promise<void>;
-      installUpdate: () => Promise<void>;
-      openUpdateRelease: () => Promise<void>;
       exportLogs: () => Promise<string | null>;
       logFrontendDiagnostic: (message: string) => Promise<void>;
-      openProjectHome: () => Promise<void>;
-      reportBug: () => Promise<void>;
-      suggestFeature: () => Promise<void>;
       getZoomFactor: () => Promise<number>;
       saveZoomFactor: (zoomFactor: number) => Promise<void>;
       onZoomFactorChanged: (handler: (zoomFactor: number) => void) => () => void;
       onSetupProgress: (handler: (event: SetupProgressEvent) => void) => () => void;
       onDataProgress: (handler: (event: DataProgressEvent) => void) => () => void;
       onStartupProgress: (handler: (event: StartupProgressEvent) => void) => () => void;
-      onUpdateState: (handler: (state: UpdateState) => void) => () => void;
     };
   }
 }

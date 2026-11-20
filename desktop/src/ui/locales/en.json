@@ -58,24 +58,7 @@
     "closeWindow": "Close"
   },
   "notices": {
-    "releaseNotesFallback": "This update includes stability improvements and experience refinements.",
-    "closeCompatibilityWarning": "Dismiss compatibility warning",
-    "closeUpdatePanel": "Close update panel",
-    "closeUpdateNotice": "Dismiss update notice",
-    "updateChecking": "Checking for updates",
-    "updateCheckingDescription": "Connecting to the update service. Please wait.",
-    "appUpToDate": "You're up to date",
-    "appUpToDateDescription": "This installation of NovelForge is up to date.",
-    "updateFound": "New version available",
-    "releaseNotes": "Release notes",
-    "viewDetails": "View details",
-    "startDownload": "Download",
-    "downloading": "Downloading",
-    "downloadProgress": "Download progress {{progress}}%",
-    "restartAndInstall": "Restart and install",
-    "updateCheckFailed": "Failed to check for updates",
-    "updateServiceUnavailable": "The update service is temporarily unavailable.",
-    "retry": "Retry"
+    "closeCompatibilityWarning": "Dismiss compatibility warning"
   },
   "startup": {
     "preparingApp": "Preparing NovelForge",

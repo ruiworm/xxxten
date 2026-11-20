@@ -31,7 +31,6 @@ import {
   type StartupProgressEvent,
   type StartLocalBackendRequest,
   type SwitchInstanceRequest,
-  type UpdateState,
 } from "../shared/ipc.js";
 import type { DesktopConfig, DesktopInstance } from "../shared/config.js";
 import { getFrontendHostPreloadPath } from "./frontend-host-preload-path.mjs";
@@ -156,21 +155,12 @@ const desktopApi = {
   reloadWindow: (): Promise<void> => ipcRenderer.invoke(IpcChannels.reloadWindow),
   toggleDevTools: (): Promise<void> => ipcRenderer.invoke(IpcChannels.toggleDevTools),
   closeWindow: (): Promise<void> => ipcRenderer.invoke(IpcChannels.closeWindow),
-  getUpdateState: (): Promise<UpdateState> => ipcRenderer.invoke(IpcChannels.getUpdateState),
   getStartupProgress: (): Promise<StartupProgressEvent | null> => ipcRenderer.invoke(IpcChannels.getStartupProgress),
-  checkForUpdate: (): Promise<void> => ipcRenderer.invoke(IpcChannels.checkForUpdate),
-  downloadUpdate: (): Promise<void> => ipcRenderer.invoke(IpcChannels.downloadUpdate),
-  cancelUpdateDownload: (): Promise<void> => ipcRenderer.invoke(IpcChannels.cancelUpdateDownload),
-  installUpdate: (): Promise<void> => ipcRenderer.invoke(IpcChannels.installUpdate),
-  openUpdateRelease: (): Promise<void> => ipcRenderer.invoke(IpcChannels.openUpdateRelease),
   exportLogs: (): Promise<string | null> => ipcRenderer.invoke(IpcChannels.exportLogs),
   logFrontendDiagnostic: (message: string): Promise<void> =>
     ipcRenderer.invoke(IpcChannels.logFrontendDiagnostic, {
       message,
     } satisfies LogFrontendDiagnosticRequest),
-  openProjectHome: (): Promise<void> => ipcRenderer.invoke(IpcChannels.openProjectHome),
-  reportBug: (): Promise<void> => ipcRenderer.invoke(IpcChannels.reportBug),
-  suggestFeature: (): Promise<void> => ipcRenderer.invoke(IpcChannels.suggestFeature),
   getZoomFactor: (): Promise<number> => ipcRenderer.invoke(IpcChannels.getZoomFactor),
   saveZoomFactor: async (zoomFactor: number): Promise<void> => {
     const savedZoomFactor = await ipcRenderer.invoke(IpcChannels.saveZoomFactor, {
@@ -199,11 +189,6 @@ const desktopApi = {
     const listener = (_event: Electron.IpcRendererEvent, payload: StartupProgressEvent) => handler(payload);
     ipcRenderer.on(IpcChannels.startupProgress, listener);
     return () => ipcRenderer.off(IpcChannels.startupProgress, listener);
-  },
-  onUpdateState: (handler: (state: UpdateState) => void): (() => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, payload: UpdateState) => handler(payload);
-    ipcRenderer.on(IpcChannels.updateState, listener);
-    return () => ipcRenderer.off(IpcChannels.updateState, listener);
   },
 };
 

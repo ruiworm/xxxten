@@ -5,12 +5,6 @@ copyright: Copyright © 2026 NovelForge
 directories:
   output: dist-electron
 
-publish:
-  provider: github
-  owner: ruiworm
-  repo: xxxten
-  releaseType: release
-
 electronLanguages:
   - en-US
   - zh-CN
@@ -28,8 +22,6 @@ extraResources:
     to: backend-dist
     filter:
       - "*.whl"
-  - from: resources/app-update.yml
-    to: app-update.yml
 
 win:
   icon: resources/icons/icon.ico
