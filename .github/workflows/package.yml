@@ -107,6 +107,11 @@ jobs:
           mkdir -p backend/frontend
           cp -r frontend/dist/. backend/frontend/
           ls -l backend/frontend/index.html
+      - name: 下载随包内置向量模型
+        run: |
+          set -euo pipefail
+          python scripts/fetch-bundled-models.py
+          du -sh backend/app/models/bundled_models
       - name: 构建后端 Python 包
         working-directory: backend
         env:
@@ -128,6 +133,19 @@ jobs:
           if "frontend/index.html" not in names:
               sys.exit(f"轮子内缺少前端产物：{wheels[0]}")
 
+          # 内置向量模型必须随包分发：GCS 直链已失效、HuggingFace 国内不可达，
+          # 缺了它买家首次建索引必然失败。
+          required_model = {
+              "app/models/bundled_models/bge-small-zh-v1.5/model_optimized.onnx",
+              "app/models/bundled_models/bge-small-zh-v1.5/config.json",
+              "app/models/bundled_models/bge-small-zh-v1.5/tokenizer.json",
+          }
+          missing_model = sorted(required_model - names)
+          if missing_model:
+              sys.exit(f"轮子内缺少内置向量模型 {missing_model}：{wheels[0]}")
+
+          bundled = [n for n in names if n.startswith("app/models/bundled_models/")]
+
           # 迁移必须随包分发，否则买家覆盖安装后拿不到修复。
           migrations = sorted(n for n in names if "/storage/migrations/versions/" in n)
           if not migrations:
@@ -138,7 +156,7 @@ jobs:
           if missing:
               sys.exit(f"轮子内缺少关键迁移 {missing}：{wheels[0]}")
 
-          print(f"{wheels[0]} 校验通过：前端产物就位，迁移 {len(migrations)} 个，关键迁移齐全")
+          print(f"{wheels[0]} 校验通过：前端产物就位，内置模型 {len(bundled)} 个文件，迁移 {len(migrations)} 个，关键迁移齐全")
           PY
       - uses: actions/upload-artifact@v7
         with:

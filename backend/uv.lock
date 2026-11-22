@@ -804,24 +804,6 @@ wheels = [
 ]
 
 [[package]]
-name = "exa-py"
-version = "2.18.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "httpcore" },
-    { name = "httpx" },
-    { name = "openai" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "requests" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/58/34/16d6d767889fdb86735d5be34dcc5db9f456870815bf3d0ddc8d5fdfbfec/exa_py-2.18.1.tar.gz", hash = "sha256:f571f001ca8122b4432ef795b1c5c0afe97b5d20e84d4a1b769b9a888141e9c7", size = 72979, upload-time = "2026-08-14T15:38:33.854Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/5f/bdd2230640e2792b3048e69bbb70ab65b8ddf8e51e2ef8880d8cce466a1f/exa_py-2.18.1-py3-none-any.whl", hash = "sha256:98a43c8c598b0360ee8c1a014e7433ae92dcbf58af3d40cac701e145c6e2680e", size = 102929, upload-time = "2026-08-14T15:38:32.531Z" },
-]
-
-[[package]]
 name = "extract-msg"
 version = "0.56.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2434,7 +2416,7 @@ wheels = [
 
 [[package]]
 name = "openfic"
-version = "0.13.13"
+version = "0.13.14"
 source = { editable = "." }
 dependencies = [
     { name = "aiocache" },
@@ -2447,7 +2429,6 @@ dependencies = [
     { name = "ddgs" },
     { name = "docx2txt" },
     { name = "ebooklib" },
-    { name = "exa-py" },
     { name = "extract-msg" },
     { name = "fastapi" },
     { name = "fastembed" },
@@ -2476,7 +2457,6 @@ dependencies = [
     { name = "nanoid" },
     { name = "odfpy" },
     { name = "openpyxl" },
-    { name = "perplexityai" },
     { name = "pillow" },
     { name = "pyarrow" },
     { name = "pydantic-settings" },
@@ -2492,7 +2472,6 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "sqlmodel" },
     { name = "starlette-compress" },
-    { name = "tavily-python" },
     { name = "tiktoken" },
     { name = "tornado" },
     { name = "trafilatura" },
@@ -2535,7 +2514,6 @@ requires-dist = [
     { name = "ddgs", specifier = ">=9.15.0" },
     { name = "docx2txt", specifier = ">=0.9" },
     { name = "ebooklib", specifier = ">=0.20" },
-    { name = "exa-py", specifier = ">=2.18.1" },
     { name = "extract-msg", specifier = ">=0.56.1" },
     { name = "fastapi", specifier = ">=0.127.0" },
     { name = "fastembed", specifier = ">=0.8.0" },
@@ -2565,7 +2543,6 @@ requires-dist = [
     { name = "nanoid", specifier = ">=2.0.0" },
     { name = "odfpy", specifier = ">=1.4.1" },
     { name = "openpyxl", specifier = ">=3.1.5" },
-    { name = "perplexityai", specifier = ">=0.43.3" },
     { name = "pillow", specifier = ">=8.0,<12.0" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'postgresql'", specifier = ">=3.3.5" },
     { name = "pyarrow", specifier = ">=24.0.0" },
@@ -2582,7 +2559,6 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0.45" },
     { name = "sqlmodel", specifier = ">=0.0.27" },
     { name = "starlette-compress", specifier = ">=1.6.1" },
-    { name = "tavily-python", specifier = ">=0.7.27" },
     { name = "tiktoken", specifier = ">=0.12.0" },
     { name = "tornado", specifier = ">=6.5.2" },
     { name = "trafilatura", specifier = ">=2.1.0" },
@@ -2753,22 +2729,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3d/20/6d461e29135f474408d0d7f95b2456a9ba245560768ee51b788af10f7429/pcodedmp-1.2.6.tar.gz", hash = "sha256:025f8c809a126f45a082ffa820893e6a8d990d9d7ddb68694b5a9f0a6dbcd955", size = 35549, upload-time = "2019-07-30T18:05:42.516Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ba/72/b380fb5c89d89c3afafac8cf02a71a45f4f4a4f35531ca949a34683962d1/pcodedmp-1.2.6-py2.py3-none-any.whl", hash = "sha256:4441f7c0ab4cbda27bd4668db3b14f36261d86e5059ce06c0828602cbe1c4278", size = 30939, upload-time = "2019-07-30T18:05:40.483Z" },
-]
-
-[[package]]
-name = "perplexityai"
-version = "0.43.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "anyio" },
-    { name = "distro" },
-    { name = "httpx" },
-    { name = "pydantic" },
-    { name = "sniffio" },
-    { name = "typing-extensions" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ed/be/1b63d3730a38ce7ec3f3b86ba1ed89bc4413d8e4d7491676ce435a963370/perplexityai-0.43.3-py3-none-any.whl", hash = "sha256:039dd7c1dac18dd00672d0815b935b6dfc987af1c440510af3fbc0883ce38284", size = 142925, upload-time = "2026-08-11T01:24:12.486Z" },
 ]
 
 [[package]]
@@ -4019,20 +3979,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c7/5a/5edc8217e9732595c7d958e06a8a7e427e8a6670f6c2682dd0cb28b09b73/starlette_compress-1.7.1.tar.gz", hash = "sha256:f4df7aa6b0029ec5c4ae960040cd5d375563a4d3f7fc134bd108ebc0ed61536c", size = 12130, upload-time = "2026-05-10T17:25:04.378Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d4/d7/2580440b73549ea453351de57bdaafc629177fc6135810b20fd40cf70e6f/starlette_compress-1.7.1-py3-none-any.whl", hash = "sha256:cd229d64f93789f90137bc08391ca946639812f514c9f5db72ef232687753cea", size = 11405, upload-time = "2026-05-10T17:25:03.215Z" },
-]
-
-[[package]]
-name = "tavily-python"
-version = "0.7.27"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "httpx" },
-    { name = "requests" },
-    { name = "tiktoken" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/92/53/e97950453a215a7b8c2c44d70b216f64c0e1d9844d8b91f025104e96d233/tavily_python-0.7.27.tar.gz", hash = "sha256:3fbbee7fc7e252479b264835e6f943b4a81395429c1bd419e8024d11bf2c1831", size = 30750, upload-time = "2026-07-30T13:44:15.245Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/dd/cf4b6668ef06670a27ed4012f2bd3663602ad5f0e1ac9b0c23e8d45d01eb/tavily_python-0.7.27-py3-none-any.whl", hash = "sha256:e5cb40cc852d108ced8a313379b7098108642eedfbd97f821296a5e1a483e9b9", size = 21988, upload-time = "2026-07-30T13:44:14.404Z" },
 ]
 
 [[package]]

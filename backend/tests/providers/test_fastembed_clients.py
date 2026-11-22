@@ -191,6 +191,90 @@ def test_load_fastembed_model_reuses_cached_instance(monkeypatch):
     fe.invalidate_fastembed_model_cache("unit-test-model")
 
 
+def _write_fake_model_dir(path, *, include_tokenizer: bool = True):
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "model_optimized.onnx").write_bytes(b"onnx")
+    (path / "config.json").write_text("{}")
+    if include_tokenizer:
+        (path / "tokenizer.json").write_text("{}")
+    return path
+
+
+def test_bundled_model_dir_requires_complete_files(monkeypatch, tmp_path):
+    """内置目录必须同时有权重、config 与分词器，否则视为未内置。"""
+    from app.models.clients import fastembed_embeddings as fe
+
+    complete = _write_fake_model_dir(tmp_path / "bundled" / "bge-small-zh-v1.5")
+    monkeypatch.setenv(fe._BUNDLED_MODELS_ENV, str(tmp_path / "bundled"))
+    assert fe._bundled_model_dir("BAAI/bge-small-zh-v1.5") == complete
+
+    # 缺分词器：不完整，不能被选中
+    _write_fake_model_dir(
+        tmp_path / "incomplete" / "bge-small-zh-v1.5", include_tokenizer=False
+    )
+    monkeypatch.setattr(fe, "_BUNDLED_MODELS_ROOT", tmp_path / "absent")
+    monkeypatch.setenv(fe._BUNDLED_MODELS_ENV, str(tmp_path / "incomplete"))
+    assert fe._bundled_model_dir("BAAI/bge-small-zh-v1.5") is None
+
+    # 未登记的模型不做内置解析
+    assert fe._bundled_model_dir("Xenova/ms-marco-MiniLM-L-6-v2") is None
+
+
+def test_load_fastembed_model_prefers_bundled_dir(monkeypatch, tmp_path):
+    """命中内置模型时直接以 specific_model_path 加载，完全不触发网络下载。"""
+    from app.models.clients import fastembed_embeddings as fe
+
+    fe.invalidate_fastembed_model_cache()
+    model_dir = _write_fake_model_dir(tmp_path / "bundled" / "bge-small-zh-v1.5")
+    monkeypatch.setenv(fe._BUNDLED_MODELS_ENV, str(tmp_path / "bundled"))
+
+    seen: dict[str, object] = {}
+
+    def fake_instantiate(model_class, model_name, cache_dir, specific_model_path=None):
+        seen["path"] = specific_model_path
+        return "model-instance"
+
+    def fail_network(*args, **kwargs):
+        raise AssertionError("命中内置模型时不应访问网络")
+
+    monkeypatch.setattr(fe, "_instantiate_fastembed_model", fake_instantiate)
+    monkeypatch.setattr(fe, "_ensure_model_from_gcs", fail_network)
+    monkeypatch.setattr(fe, "_ensure_model_from_hf", fail_network)
+
+    try:
+        assert (
+            fe._load_fastembed_model(object, "BAAI/bge-small-zh-v1.5")
+            == "model-instance"
+        )
+        assert seen["path"] == model_dir
+    finally:
+        fe.invalidate_fastembed_model_cache()
+
+
+def test_instantiate_degrades_when_specific_path_unsupported(tmp_path):
+    """旧版实现不接受 specific_model_path / cache_dir 时应逐级降级而非报错。"""
+    from app.models.clients import fastembed_embeddings as fe
+
+    class ModelRejectingSpecificPath:
+        def __init__(self, model_name: str, cache_dir: str | None = None) -> None:
+            self.model_name = model_name
+            self.cache_dir = cache_dir
+
+    class ModelOnlyAcceptingName:
+        def __init__(self, model_name: str) -> None:
+            self.model_name = model_name
+
+    a = fe._instantiate_fastembed_model(
+        ModelRejectingSpecificPath, "m", tmp_path, specific_model_path=tmp_path
+    )
+    assert a.model_name == "m"
+
+    b = fe._instantiate_fastembed_model(
+        ModelOnlyAcceptingName, "m2", tmp_path, specific_model_path=tmp_path
+    )
+    assert b.model_name == "m2"
+
+
 def test_hf_download_failure_enters_cooldown(monkeypatch, tmp_path):
     """HF 不可达时首次失败会记录冷却，冷却期内不再重复预检。"""
     from app.models.clients import fastembed_embeddings as fe

@@ -5,9 +5,13 @@ FastEmbed Embeddings - 将 fastembed 本地模型包装为 LangChain Embeddings 
 fastembed 的推理是同步的，这里通过 asyncio.to_thread 将同步调用移出事件循环，
 避免阻塞请求处理。
 
-模型下载策略：fastembed 默认先尝试 HuggingFace，但 HF 在部分网络环境下不可达
-会导致无限挂起。此处优先从 GCS (Google Cloud Storage) 直接下载，并以
-HF_HUB_OFFLINE=1 加载，绕过 HF 网络请求。仅当模型无 GCS 源时才回退到 HF。
+模型获取策略（按优先级）：
+1. 随安装包内置的模型目录（``app/models/bundled_models/<模型名>``，可由环境变量
+   ``OPENFIC_BUNDLED_MODELS_DIR`` 指向安装目录下的副本），命中时直接以
+   ``specific_model_path`` 加载，完全不联网。这是国内网络下的主路径。
+2. GCS (Google Cloud Storage) 直链下载（上游已陆续撤下，仅部分旧模型仍有）。
+3. HuggingFace 下载（国内通常不可达，保留为最后兜底）。
+后两条路径失败会进入冷却窗口，避免每次检索都重试导致长时间卡顿。
 """
 
 from __future__ import annotations
@@ -30,6 +34,15 @@ from app.settings import BACKEND_DATA_DIR
 
 _FASTEMBED_CACHE_DIR = BACKEND_DATA_DIR / "fastembed_cache"
 _DOWNLOAD_TIMEOUT_SECONDS = 120
+
+# 随安装包分发的内置模型：键为 fastembed 的 model_name，值为内置目录名。
+# 新增内置模型时把文件放进 app/models/bundled_models/<目录名>/ 并在此登记。
+# 环境变量 OPENFIC_BUNDLED_MODELS_DIR 可覆盖根目录（桌面端传入安装目录下的副本）。
+_BUNDLED_MODELS_ENV = "OPENFIC_BUNDLED_MODELS_DIR"
+_BUNDLED_MODEL_FOLDERS: dict[str, str] = {
+    "BAAI/bge-small-zh-v1.5": "bge-small-zh-v1.5",
+}
+_BUNDLED_MODELS_ROOT = Path(__file__).resolve().parents[1] / "bundled_models"
 
 # 下载失败冷却窗口（秒）。无 GCS 源的模型（内置重排模型即属此类）只能走
 # HuggingFace；网络不可达时若不冷却，每次检索都会重新预检 + 重试，
@@ -82,6 +95,43 @@ def _resolve_cache_dir() -> Path:
     return cache_dir
 
 
+def _is_complete_model_dir(path: Path) -> bool:
+    """判断目录是否是一份可离线加载的 ONNX 模型（权重 + 分词器配置齐全）。"""
+    try:
+        if not path.is_dir():
+            return False
+        names = {item.name for item in path.iterdir() if item.is_file()}
+    except OSError:
+        return False
+    return (
+        any(name.endswith(".onnx") for name in names)
+        and "config.json" in names
+        and "tokenizer.json" in names
+    )
+
+
+def _bundled_model_dir(model_name: str) -> Path | None:
+    """定位随安装包内置的模型目录；未内置或不完整时返回 None。
+
+    优先读环境变量 ``OPENFIC_BUNDLED_MODELS_DIR``（桌面端会指向 resources 下的副本），
+    其次读轮子内的 ``app/models/bundled_models/<目录名>``。
+    """
+    folder = _BUNDLED_MODEL_FOLDERS.get(model_name)
+    if folder is None:
+        return None
+
+    candidates: list[Path] = []
+    override = (os.environ.get(_BUNDLED_MODELS_ENV) or "").strip()
+    if override:
+        candidates.append(Path(override) / folder)
+    candidates.append(_BUNDLED_MODELS_ROOT / folder)
+
+    for candidate in candidates:
+        if _is_complete_model_dir(candidate):
+            return candidate
+    return None
+
+
 def _build_opener() -> urllib.request.OpenerDirector:
     """构建支持系统代理的 URL opener。
 
@@ -127,9 +177,7 @@ def _download_with_timeout(url: str, dest: Path, *, timeout_seconds: int) -> Non
                         )
                         last_report = written
             if total > 0 and written != total:
-                raise IOError(
-                    f"模型下载不完整: 已写 {written} 字节, 预期 {total} 字节"
-                )
+                raise IOError(f"模型下载不完整: 已写 {written} 字节, 预期 {total} 字节")
     except (urllib.error.URLError, socket.timeout, TimeoutError) as exc:
         dest.unlink(missing_ok=True)
         raise RuntimeError(
@@ -204,7 +252,9 @@ def _ensure_model_from_gcs(
                 break
         shutil.rmtree(tmp_dir.parent, ignore_errors=True)
     except Exception as exc:
-        _record_download_failure(source_key, f"内置模型下载失败（GCS）: {model_name}\n错误: {exc}")
+        _record_download_failure(
+            source_key, f"内置模型下载失败（GCS）: {model_name}\n错误: {exc}"
+        )
         raise
 
     logger.info("fastembed 模型已缓存: {} -> {}", model_name, model_dir)
@@ -358,13 +408,24 @@ def _instantiate_fastembed_model(
     model_class: Any,
     model_name: str,
     cache_dir: Path,
+    specific_model_path: Path | None = None,
 ) -> Any:
+    """构造 fastembed 模型，按能力逐级降级以兼容不同版本与测试替身。"""
+    kwargs: dict[str, Any] = {"model_name": model_name, "cache_dir": str(cache_dir)}
+    if specific_model_path is not None:
+        kwargs["specific_model_path"] = str(specific_model_path)
     try:
-        return model_class(model_name=model_name, cache_dir=str(cache_dir))
+        return model_class(**kwargs)
     except TypeError as exc:
-        if "cache_dir" not in str(exc):
+        message = str(exc)
+        if "specific_model_path" in message and specific_model_path is not None:
+            # 版本或替身不支持直接指定模型路径：退回原有下载流程。
+            return _instantiate_fastembed_model(model_class, model_name, cache_dir)
+        if "cache_dir" not in message:
             raise
-        return model_class(model_name=model_name)
+        kwargs.pop("cache_dir", None)
+        kwargs.pop("specific_model_path", None)
+        return model_class(**kwargs)
 
 
 def _model_cache_key(model_class: Any, model_name: str) -> tuple[str, str]:
@@ -392,8 +453,21 @@ def invalidate_fastembed_model_cache(model_name: str | None = None) -> None:
 
 
 def _load_fastembed_model_uncached(model_class: Any, model_name: str) -> Any:
-    """实际执行模型准备与实例化（不含缓存）。"""
+    """实际执行模型准备与实例化（不含缓存）。
+
+    随包内置模型优先，命中时零网络请求；否则按 GCS → HuggingFace 顺序下载。
+    """
     cache_dir = _resolve_cache_dir()
+
+    bundled_dir = _bundled_model_dir(model_name)
+    if bundled_dir is not None:
+        logger.info("使用随包内置的 fastembed 模型: {} -> {}", model_name, bundled_dir)
+        return _instantiate_fastembed_model(
+            model_class,
+            model_name,
+            cache_dir,
+            specific_model_path=bundled_dir,
+        )
 
     gcs_ready = _ensure_model_from_gcs(model_class, model_name, cache_dir)
     if gcs_ready:
@@ -415,10 +489,10 @@ def _load_fastembed_model_uncached(model_class: Any, model_name: str) -> Any:
 
 
 def _load_fastembed_model(model_class: Any, model_name: str) -> Any:
-    """加载 fastembed 模型，优先从 GCS 下载以绕过不可达的 HuggingFace。
+    """加载 fastembed 模型，顺序为：随包内置 → GCS → HuggingFace。
 
-    无 GCS 源的模型（如 rerank）回退到 HuggingFace，带超时保护，
-    网络不可达时快速失败而非无限挂起。
+    内置模型直接以 specific_model_path 加载，国内网络下无需任何下载。
+    未内置的模型（如内置重排模型）才走网络，带超时保护，不可达时快速失败。
 
     结果按 (模型类, 模型名) 做进程级缓存，并对同一模型使用单飞锁，
     避免并发检索重复构造 onnx 会话。
@@ -448,9 +522,7 @@ class FastEmbedEmbeddings(Embeddings):
         try:
             from fastembed import TextEmbedding
         except ModuleNotFoundError as exc:
-            raise ImportError(
-                "fastembed 未安装。请运行 uv sync 安装依赖。"
-            ) from exc
+            raise ImportError("fastembed 未安装。请运行 uv sync 安装依赖。") from exc
 
         self._model_name = model_name
         self._model = _load_fastembed_model(TextEmbedding, model_name)

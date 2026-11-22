@@ -26,6 +26,8 @@ AGENTS.md
 CLAUDE.md
 docs/superpowers
 *.db
+# 内置向量模型由 scripts/fetch-bundled-models.py 在构建期下载，不入库
+backend/app/models/bundled_models/
 dist-electron
 frontend_dist
 dist-electron-new
