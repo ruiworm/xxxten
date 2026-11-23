@@ -17,7 +17,6 @@ from app.models.clients.embedding_client import EmbeddingClient, EmbeddingConfig
 from app.models.clients.rerank_client import (
     RerankClient,
     RerankConfig,
-    RerankItem,
 )
 
 
@@ -81,35 +80,18 @@ async def test_embedding_client_builtin_uses_fastembed(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_rerank_client_builtin_uses_fastembed(monkeypatch):
-    _install_fake_fastembed(monkeypatch)
-
-    client = RerankClient(
-        RerankConfig(
-            provider_type="builtin",
-            base_url="builtin://local",
-            api_key="",
-            model_id="Xenova/ms-marco-MiniLM-L-6-v2",
+async def test_rerank_client_rejects_builtin_provider():
+    """内置本地重排模型已移除，builtin 提供商不再被接受。"""
+    with pytest.raises(ValueError):
+        RerankClient(
+            RerankConfig(
+                provider_type="builtin",
+                base_url="builtin://local",
+                api_key="",
+                model_id="Xenova/ms-marco-MiniLM-L-6-v2",
+                use_openai_compatible=False,
+            )
         )
-    )
-
-    response = await client.rerank("query", ["doc1", "doc2", "doc3"], top_n=2)
-    assert len(response.results) == 2
-    assert all(isinstance(item, RerankItem) for item in response.results)
-    scores = [item.relevance_score for item in response.results]
-    assert scores == sorted(scores, reverse=True)
-
-
-def test_rerank_client_accepts_builtin_provider():
-    client = RerankClient(
-        RerankConfig(
-            provider_type="builtin",
-            base_url="builtin://local",
-            api_key="",
-            model_id="Xenova/ms-marco-MiniLM-L-6-v2",
-        )
-    )
-    assert client.config.provider_type == "builtin"
 
 
 def test_embedding_client_uses_openai_compatible_for_ollama_even_when_not_forced():

@@ -94,31 +94,33 @@ export function IndexSettingsGlobalConfig({
             />
           </Flex>
 
-          <Flex
-            direction="column"
-            gap="1"
-          >
-            <Text
-              size="1"
-              color="gray"
+          {rerankModelOptions.length > 0 ? (
+            <Flex
+              direction="column"
+              gap="1"
             >
-              {t("index.rerankModel")}
-            </Text>
-            <ModelIdSelect
-              value={settings.indexRerankEnabled ? settings.defaultRerankModel || "" : ""}
-              onChange={onRerankModelChange}
-              models={rerankModelOptions}
-              taskType="rerank"
-              placeholder={t("index.disabled")}
-              editable={false}
-              allowCustomValue={false}
-              emptyOptionLabel={t("index.disabled")}
-              triggerStyle={FIELD_WIDTH}
-              triggerClassName="select-trigger--background"
-              contentClassName="settings-background-panel"
-              disabled={isAgentSettingsLocked}
-            />
-          </Flex>
+              <Text
+                size="1"
+                color="gray"
+              >
+                {t("index.rerankModel")}
+              </Text>
+              <ModelIdSelect
+                value={settings.indexRerankEnabled ? settings.defaultRerankModel || "" : ""}
+                onChange={onRerankModelChange}
+                models={rerankModelOptions}
+                taskType="rerank"
+                placeholder={t("index.disabled")}
+                editable={false}
+                allowCustomValue={false}
+                emptyOptionLabel={t("index.disabled")}
+                triggerStyle={FIELD_WIDTH}
+                triggerClassName="select-trigger--background"
+                contentClassName="settings-background-panel"
+                disabled={isAgentSettingsLocked}
+              />
+            </Flex>
+          ) : null}
 
           <LabeledSelect
             label={t("index.enable")}

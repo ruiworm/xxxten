@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Builtin models - 基于 fastembed 的内置向量与重排模型定义。
+Builtin models - 基于 fastembed 的内置向量模型定义。
 
 内置模型使用固定 ID，应用启动时幂等地写入数据库，标记为 is_builtin，
 不可通过 API 删除或编辑。运行时由 fastembed 在本地执行（有 GPU 用 GPU，
 无 CUDA 自动降级到 CPU）。
+
+内置重排模型（Xenova/ms-marco-MiniLM-L-6-v2）已于 0.13.15 移除：该模型只有
+HuggingFace 源、国内无法下载，且是英文段落匹配模型，对中文小说检索收益有限。
+重排仍可通过自行配置的远端 rerank 模型启用。
 """
 
 from __future__ import annotations
@@ -29,10 +33,6 @@ BUILTIN_EMBEDDING_FASTEMBED_NAME = "BAAI/bge-small-zh-v1.5"
 BUILTIN_EMBEDDING_MODEL_NAME = "bge-small-zh-v1.5"
 BUILTIN_EMBEDDING_DIMENSIONS = 512
 
-BUILTIN_RERANK_MODEL_ID = "builtin-rerank-ms-marco-minilm-l6-v2"
-BUILTIN_RERANK_FASTEMBED_NAME = "Xenova/ms-marco-MiniLM-L-6-v2"
-BUILTIN_RERANK_MODEL_NAME = "ms-marco-MiniLM-L-6-v2"
-
 
 @dataclass(frozen=True)
 class BuiltinModelSpec:
@@ -52,13 +52,6 @@ BUILTIN_MODELS: tuple[BuiltinModelSpec, ...] = (
         model_id=BUILTIN_EMBEDDING_FASTEMBED_NAME,
         task_type="embedding",
         dimensions=BUILTIN_EMBEDDING_DIMENSIONS,
-    ),
-    BuiltinModelSpec(
-        id=BUILTIN_RERANK_MODEL_ID,
-        name=BUILTIN_RERANK_MODEL_NAME,
-        model_id=BUILTIN_RERANK_FASTEMBED_NAME,
-        task_type="rerank",
-        dimensions=None,
     ),
 )
 
@@ -126,8 +119,6 @@ __all__ = [
     "BUILTIN_EMBEDDING_MODEL_ID",
     "BUILTIN_EMBEDDING_FASTEMBED_NAME",
     "BUILTIN_EMBEDDING_DIMENSIONS",
-    "BUILTIN_RERANK_MODEL_ID",
-    "BUILTIN_RERANK_FASTEMBED_NAME",
     "BUILTIN_MODELS",
     "BuiltinModelSpec",
     "is_builtin_model",

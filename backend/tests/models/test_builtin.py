@@ -12,8 +12,6 @@ from app.models.builtin import (
     BUILTIN_EMBEDDING_MODEL_NAME,
     BUILTIN_PROVIDER_ID,
     BUILTIN_PROVIDER_TYPE,
-    BUILTIN_RERANK_MODEL_ID,
-    BUILTIN_RERANK_MODEL_NAME,
     seed_builtin_models,
 )
 from app.models.entities.model import Model
@@ -41,12 +39,6 @@ async def test_seed_builtin_models_creates_provider_and_models(
     assert embedding.name == BUILTIN_EMBEDDING_MODEL_NAME
     assert embedding.dimensions == 512
 
-    rerank = await model_repo.get_by_id(session, BUILTIN_RERANK_MODEL_ID)
-    assert rerank is not None
-    assert rerank.is_builtin is True
-    assert rerank.task_type == "rerank"
-    assert rerank.name == BUILTIN_RERANK_MODEL_NAME
-
 
 @pytest.mark.asyncio
 async def test_seed_builtin_models_is_idempotent(session: AsyncSession):
@@ -57,7 +49,7 @@ async def test_seed_builtin_models_is_idempotent(session: AsyncSession):
         select(Model).where(col(Model.provider_id) == BUILTIN_PROVIDER_ID)
     )
     models = list(result.scalars().all())
-    assert len(models) == 2
+    assert len(models) == 1
 
 
 @pytest.mark.asyncio
@@ -79,7 +71,7 @@ async def test_update_builtin_model_is_blocked(
     await session.commit()
 
     response = await client.put(
-        f"/api/v1/models/{BUILTIN_RERANK_MODEL_ID}",
+        f"/api/v1/models/{BUILTIN_EMBEDDING_MODEL_ID}",
         json={"name": "renamed"},
     )
     assert response.status_code == 400
@@ -106,7 +98,7 @@ async def test_builtin_provider_supported_task_types(session: AsyncSession):
 
     service = ModelProviderService(EncryptionService("id-hEPdEELwlgep9FQhcYQtX7ow188l7WHwy65qOZGQ="))
     task_types = await service.get_supported_task_types(provider)
-    assert task_types == ["embedding", "rerank"]
+    assert task_types == ["embedding"]
 
 
 @pytest.mark.asyncio

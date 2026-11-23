@@ -116,7 +116,7 @@ class ModelProviderService:
         catalog_match: CatalogMatch | None = None,
     ) -> list[str]:
         if provider.is_builtin:
-            return ["embedding", "rerank"]
+            return ["embedding"]
         if provider.provider_type == OPENAI_CODEX_PROVIDER_TYPE:
             return ["llm"]
         if provider.provider_type == "gemini-compatible":

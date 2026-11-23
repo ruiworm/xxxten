@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 Rerank Client - Rerank 模型调用客户端。
+
+仅支持远端 rerank 接口（OpenAI-compatible 风格 /rerank）。内置本地重排模型
+已于 0.13.15 移除：它只有 HuggingFace 源、国内无法下载，且为英文模型，
+对中文小说检索收益有限。
 """
 
-import math
 from dataclasses import dataclass
 from typing import Any
-
-import asyncio
 
 import httpx
 from loguru import logger
@@ -29,7 +30,6 @@ SUPPORTED_RERANK_PROVIDERS = {
     "openai-compatible",
     "openai",
     "nvidia-ai-endpoints",
-    "builtin",
 }
 
 
@@ -68,9 +68,7 @@ class RerankClient:
 
     def __init__(self, config: RerankConfig):
         self.runtime_provider_type = (
-            "builtin"
-            if config.provider_type == "builtin"
-            else "openai-compatible"
+            "openai-compatible"
             if config.use_openai_compatible
             else config.provider_type
         )
@@ -83,9 +81,6 @@ class RerankClient:
     async def rerank(
         self, query: str, documents: list[str], top_n: int | None = None
     ) -> RerankResponse:
-        if self.runtime_provider_type == "builtin":
-            return await self._rerank_builtin(query, documents, top_n)
-
         payload: dict[str, Any] = {
             "model": self.config.model_id,
             "query": query,
@@ -149,44 +144,3 @@ class RerankClient:
             model=data.get("model"),
             usage=data.get("usage"),
         )
-
-    async def _rerank_builtin(
-        self, query: str, documents: list[str], top_n: int | None
-    ) -> RerankResponse:
-        """使用 fastembed 本地重排模型计算相关性分数。"""
-        try:
-            from fastembed.rerank.cross_encoder import TextCrossEncoder
-        except ModuleNotFoundError as exc:
-            raise ImportError(
-                "fastembed 未安装。请运行 uv sync 安装依赖。"
-            ) from exc
-
-        from app.models.clients.fastembed_embeddings import _load_fastembed_model
-
-        def _compute() -> RerankResponse:
-            encoder = _load_fastembed_model(TextCrossEncoder, self.config.model_id)
-            scores = list(encoder.rerank(query, documents))
-            items = [
-                RerankItem(
-                    index=i,
-                    relevance_score=1.0 / (1.0 + math.exp(-float(score))),
-                )
-                for i, score in enumerate(scores)
-            ]
-            if top_n is not None:
-                items = sorted(items, key=lambda it: it.relevance_score, reverse=True)[:top_n]
-            return RerankResponse(results=items, model=self.config.model_id)
-
-        # 本地重排模型可能因未缓存而触发下载，或推理耗时过长。
-        # 这里加超时保护，超时后由上层（检索构建器）降级为 RRF 排序，
-        # 避免一次重排把整次章节检索拖垮。
-        try:
-            return await asyncio.wait_for(
-                asyncio.to_thread(_compute),
-                timeout=float(self.config.request_timeout),
-            )
-        except TimeoutError as exc:
-            raise ProviderTimeoutError(
-                f"内置重排模型加载或推理超时（{self.config.request_timeout}s）: "
-                f"{self.config.model_id}"
-            ) from exc
