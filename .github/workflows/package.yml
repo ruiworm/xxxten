@@ -344,7 +344,11 @@ jobs:
           - os: macos-15-intel
             electron_args: '--mac --x64'
             artifact_name: desktop-mac-x86_64
-          - os: macos-15
+          # Apple Silicon 包在 Intel runner 上交叉打包：electron-builder 会自行下载
+          # arm64 版 Electron 再封装，产物架构由 --arm64 决定，与宿主无关。
+          # 不用 macos-15（arm64）是因为该池容量紧张，曾连续三次
+          # 「not acquired by Runner」失败，卡住整个发布。
+          - os: macos-15-intel
             electron_args: '--mac --arm64'
             artifact_name: desktop-mac-aarch64
     runs-on: ${{ matrix.os }}
