@@ -213,6 +213,17 @@ async function handleAppRequest(request: Request): Promise<Response> {
     });
   }
 
+  // 壳层会在后端尚未监听时就把前端挂出来。此时 runtime-config 里还没有地址，
+  // 前端会退化成相对路径请求；如果落到下面的静态文件分支，会拿到 index.html
+  // 并返回 200，调用方会把「一张页面」当成合法响应，初始化被误判为成功。
+  // 这里明确回 503，交由前端自身的重试逻辑等待后端就绪。
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/socket.io")) {
+    return new Response(JSON.stringify({ detail: "backend not ready" }), {
+      status: 503,
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
   if (
     url.hostname === "setup" &&
     (url.pathname === SHARED_FONT_CSS_PATH || url.pathname.startsWith(SHARED_FONT_PREFIX))

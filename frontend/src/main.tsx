@@ -2,10 +2,10 @@ import { Theme } from "@radix-ui/themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { lazy, StrictMode, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { BrowserRouter, Routes, Route } from "react-router";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router";
 
 import App from "./App.tsx";
-import { AppCrashFallback, GlobalLoading, toast } from "./components";
+import { AppCrashFallback, AppSkeleton, GlobalLoading, toast } from "./components";
 import { Toaster } from "./components/toaster";
 import { AppLayout } from "./features/app-shell";
 import { LegacyProjectRedirect } from "./features/app-shell/components/legacy-project-redirect";
@@ -28,7 +28,7 @@ import {
   loadConfiguredFonts,
 } from "./lib/font-utils";
 import { getOrCreateRoot } from "./lib/get-or-create-root";
-import { loadRuntimeConfig } from "./lib/runtime-config";
+import { getRuntimeConfig, loadRuntimeConfig } from "./lib/runtime-config";
 import { connectSocket } from "./lib/socket-client";
 import {
   applyThemePalette,
@@ -79,9 +79,33 @@ const queryClient = new QueryClient({
 
 const FRONTEND_VERSION = __OPENFIC_FRONTEND_VERSION__;
 const INITIALIZATION_TIMEOUT_MS = 30_000;
+/**
+ * 本地后端首次安装或版本更新时，需要下载便携式 Python 并安装 wheel，耗时可达数分钟。
+ * 桌面壳此时会先挂载前端（骨架可见、顶部细进度条显示真实阶段），因此这里必须
+ * 允许长时间重试，否则会在壳层仍在正常推进时抢先抛出「初始化失败」。
+ * 真正的失败由壳层接管：启动失败时它会切回配置页并卸载本页面。
+ */
+const LOCAL_BACKEND_INITIALIZATION_TIMEOUT_MS = 10 * 60_000;
 const THEME_SYNC_DEBOUNCE_MS = 400;
 const SYSTEM_THEME_MEDIA_QUERY = "(prefers-color-scheme: dark)";
 const THEME_MODE_CYCLE: readonly ThemeMode[] = ["system", "light", "dark"];
+
+/** 回环地址说明后端跑在本机（桌面内嵌或本机 serve），需要容忍冷启动时间。 */
+function resolveInitializationTimeout(): number {
+  const baseUrl = getRuntimeConfig()?.backendBaseUrl;
+  if (!baseUrl) return LOCAL_BACKEND_INITIALIZATION_TIMEOUT_MS;
+  try {
+    const { hostname } = new URL(baseUrl);
+    const isLoopback =
+      hostname === "127.0.0.1" ||
+      hostname === "localhost" ||
+      hostname === "::1" ||
+      hostname === "[::1]";
+    return isLoopback ? LOCAL_BACKEND_INITIALIZATION_TIMEOUT_MS : INITIALIZATION_TIMEOUT_MS;
+  } catch {
+    return INITIALIZATION_TIMEOUT_MS;
+  }
+}
 
 function getSystemThemeAppearance(): ThemeAppearance {
   return window.matchMedia(SYSTEM_THEME_MEDIA_QUERY).matches ? "dark" : "light";
@@ -178,6 +202,25 @@ const DashboardPage = lazy(() =>
   })),
 );
 
+/**
+ * 壳层标题栏的「项目」按钮位于 webview 之外，无法直接调用前端路由；
+ * preload 把它转发成页面内事件，这里负责换成真正的路由跳转。
+ */
+function DesktopNavigationBridge() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleNavigate = (event: Event) => {
+      const path = (event as CustomEvent<unknown>).detail;
+      if (typeof path === "string" && path.startsWith("/")) navigate(path);
+    };
+    window.addEventListener("openfic:navigate", handleNavigate);
+    return () => window.removeEventListener("openfic:navigate", handleNavigate);
+  }, [navigate]);
+
+  return null;
+}
+
 function AppContent({
   appearance,
   version,
@@ -197,6 +240,7 @@ function AppContent({
 }) {
   return (
     <BrowserRouter>
+      <DesktopNavigationBridge />
       <Routes>
         <Route
           element={
@@ -464,7 +508,7 @@ function Root() {
       } catch (initializationError) {
         if (mounted) {
           // Socket.IO retries transports and reconnects within this deadline.
-          if (Date.now() - startTime >= INITIALIZATION_TIMEOUT_MS) {
+          if (Date.now() - startTime >= resolveInitializationTimeout()) {
             setError(getInitializationErrorMessage(initializationError));
             return;
           }
@@ -517,10 +561,13 @@ function Root() {
             panelBackground="solid"
           >
             {!isReady ? (
-              <GlobalLoading
-                error={error}
-                onRetry={() => window.location.reload()}
-              />
+              error ? (
+                <GlobalLoading error={error} onRetry={() => window.location.reload()} />
+              ) : (
+                // 后端冷启动期间先渲染与真实布局同构的骨架，避免用户盯着加载动画
+                // 等待数秒；初始化失败时仍回落到带错误提示与重试的 GlobalLoading。
+                <AppSkeleton />
+              )
             ) : requiresAuthentication ? (
               <AuthPage />
             ) : (

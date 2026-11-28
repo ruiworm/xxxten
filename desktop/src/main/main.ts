@@ -188,6 +188,8 @@ async function startLocalBackend(
     signal,
     dataDir,
     accessKey,
+    // 进程一 spawn 就把地址写给前端；health 通过后下面还会再设一次作为兜底。
+    (baseUrl) => setBackendBaseUrl(baseUrl),
   );
   setBackend(backend);
   setBackendBaseUrl(backend.baseUrl);

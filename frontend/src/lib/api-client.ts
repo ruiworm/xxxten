@@ -124,7 +124,13 @@ export async function loginWithPassword(payload: AuthLoginRequest): Promise<Auth
 // 健康检查 API
 export async function checkHealth(): Promise<HealthResponse> {
   const response = await apiClient.get<HealthResponse>("/health");
-  return response.data;
+  const health = response.data;
+  // 桌面壳允许在后端尚未监听时先渲染前端，此时请求可能命中静态页而不是 API。
+  // 显式校验载荷，避免把「一张 HTML 页面」当成健康响应，让初始化提前置为就绪。
+  if (!health || health.status !== "healthy") {
+    throw new Error("backend health check returned an unexpected payload");
+  }
+  return health;
 }
 
 // ============================================

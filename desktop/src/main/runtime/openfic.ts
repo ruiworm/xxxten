@@ -721,6 +721,7 @@ export async function startLocalNovelForgeBackend(
   signal?: AbortSignal,
   dataDir?: string,
   accessKey?: string,
+  onBaseUrl?: (baseUrl: string) => void,
 ): Promise<{ handle: BackendProcessHandle; maintenanceError: string | null }> {
   throwIfAborted(signal);
   startupProgress?.begin({
@@ -757,6 +758,11 @@ export async function startLocalNovelForgeBackend(
   });
 
   try {
+    // 端口在 spawn 之前就已由内核分配，这里立刻把 baseUrl 暴露给运行时配置。
+    // 前端因此可以在后端完成模块导入之前就开始加载主界面，并自行轮询健康检查，
+    // 不必等整条启动链路（导入 + 迁移 + 维护）跑完才拿到地址。
+    onBaseUrl?.(handle.baseUrl);
+
     const health = await waitForBackend(handle.baseUrl, {
       process: handle.process,
       signal,

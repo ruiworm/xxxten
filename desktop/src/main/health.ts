@@ -6,6 +6,13 @@ import { isNgrokUrl } from "./remote-url.js";
 
 const DEFAULT_TIMEOUT_MS = 60_000;
 
+/**
+ * 后端通常 4~6 秒才能完成导入并监听端口。轮询粒度直接决定「服务已就绪」到
+ * 「主进程发现它已就绪」之间的空转时间，500ms 会平均浪费 250ms、最坏 500ms。
+ * 轮询只发生在启动阶段的回环请求上，100ms 的频率开销可以忽略。
+ */
+const HEALTH_POLL_INTERVAL_MS = 100;
+
 export interface BackendHealth {
   status: "healthy";
   version: string | null;
@@ -116,7 +123,7 @@ export async function waitForBackend(
       if (processError) throw processError;
 
       await new Promise<void>((resolve) => {
-        const timer = setTimeout(resolve, 500);
+        const timer = setTimeout(resolve, HEALTH_POLL_INTERVAL_MS);
         controller.signal.addEventListener(
           "abort",
           () => {
