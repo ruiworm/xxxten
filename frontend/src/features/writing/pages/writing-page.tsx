@@ -1,9 +1,9 @@
 import { Box, Flex, IconButton, Tooltip } from "@radix-ui/themes";
-import { Bot, List, MessageSquareQuote } from "lucide-react";
+import { Bot, List, MessageSquareQuote, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { motion } from "motion/react";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Panel, Group, Separator } from "react-resizable-panels";
+import { Panel, Group, Separator, type PanelImperativeHandle } from "react-resizable-panels";
 import { useParams } from "react-router";
 
 import "./writing-page.css";
@@ -95,6 +95,37 @@ export function WritingPage() {
     onSwipe: blurMobileEditorElement,
   });
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const assistantPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const [isAssistantPanelCollapsed, setIsAssistantPanelCollapsed] = useState(false);
+
+  /**
+   * AI 面板折叠。react-resizable-panels v4 没有 onCollapse 回调，状态需要自己维护：
+   * 点击时按「意图」直接置位，避免被随后的 onResize 用旧尺寸覆盖；
+   * 用户拖拽到阈值触发的自动折叠由 onResize 在下一帧补同步。
+   */
+  const toggleAssistantPanel = useCallback(() => {
+    const panel = assistantPanelRef.current;
+    if (!panel) return;
+    const nextCollapsed = !panel.isCollapsed();
+    if (nextCollapsed) panel.collapse();
+    else panel.expand();
+    setIsAssistantPanelCollapsed(nextCollapsed);
+  }, []);
+
+  const handleAssistantPanelResize = useCallback(() => {
+    const panel = assistantPanelRef.current;
+    if (!panel) return;
+    // collapse() 触发的 resize 回调里尺寸可能尚未落地，推到下一帧再读。
+    requestAnimationFrame(() => {
+      setIsAssistantPanelCollapsed(panel.getSize().inPixels <= 1);
+    });
+  }, []);
+
+  // 首帧对齐：布局若被持久化为折叠状态，图标与文案要跟着变。
+  useEffect(() => {
+    const panel = assistantPanelRef.current;
+    if (panel) setIsAssistantPanelCollapsed(panel.getSize().inPixels <= 1);
+  }, []);
   const [hasOpenedSummary, setHasOpenedSummary] = useState(false);
   const [hasEditorSelection, setHasEditorSelection] = useState(false);
   const addSelectionToConversationRef = useRef<(() => void) | null>(null);
@@ -457,12 +488,28 @@ export function WritingPage() {
 
             <Panel
               id="right-sidebar"
+              panelRef={assistantPanelRef}
               defaultSize={500}
               minSize={300}
               maxSize={600}
-              collapsible={false}
+              collapsible
+              collapsedSize={0}
+              onResize={handleAssistantPanelResize}
             >
               <Box className="writing-page-sidebar writing-page-sidebar--right">
+                <Tooltip content={t("assistant.collapsePanel")}>
+                  <IconButton
+                    className="assistant-panel-collapse-button"
+                    variant="ghost"
+                    color="gray"
+                    highContrast
+                    size="1"
+                    aria-label={t("assistant.collapsePanel")}
+                    onClick={toggleAssistantPanel}
+                  >
+                    <PanelRightClose size={15} />
+                  </IconButton>
+                </Tooltip>
                 <AssistantSidebarHost
                   projectId={projectId}
                   onStateChange={setAssistantState}
@@ -593,6 +640,29 @@ export function WritingPage() {
           <PanelLayoutLoading />
         )}
       </Box>
+
+      {/* AI 面板折叠后宽度为 0，内部按钮不可见，这里提供常驻的展开入口 */}
+      {!isMobile && isAssistantPanelCollapsed ? (
+        <Tooltip content={t("assistant.expandPanel")}>
+          <IconButton
+            style={{
+              position: "absolute",
+              top: "50%",
+              right: 8,
+              zIndex: 20,
+              transform: "translateY(-50%)",
+              boxShadow: "0 1px 6px var(--gray-a4)",
+            }}
+            variant="soft"
+            color="gray"
+            size="1"
+            aria-label={t("assistant.expandPanel")}
+            onClick={toggleAssistantPanel}
+          >
+            <PanelRightOpen size={16} />
+          </IconButton>
+        </Tooltip>
+      ) : null}
 
       {isMobile && (
         <AssistantSidebarHost

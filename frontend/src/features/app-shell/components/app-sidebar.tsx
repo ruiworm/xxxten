@@ -1,7 +1,7 @@
 import { Box, Flex } from "@radix-ui/themes";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { ChartNoAxesCombined, Globe, LibraryBig, UserRound, Workflow } from "lucide-react";
+import { ChartNoAxesCombined, Globe, LibraryBig, PenLine, UserRound, Workflow } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -158,12 +158,20 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
   );
 
   /**
-   * 项目内才出现的两项。世界观与角色属于某个项目，
-   * 项目库、仪表盘、提示词链这些全局页面没有当前项目，一律不显示。
+   * 项目内才出现的三项。世界观与角色属于某个项目，项目库、仪表盘、提示词链
+   * 这些全局页面没有当前项目，一律不显示。
+   * 「创作」放在最前，否则进入项目后没有回到写作区的入口。
    */
   const projectNavItems = useMemo<AppSidebarNavItem[]>(() => {
     if (!projectId) return [];
     return [
+      {
+        label: t("topbar.creation"),
+        href: `/projects/${projectId}`,
+        icon: PenLine,
+        // 精确匹配：写作页就是 /projects/:id 本身，不能让子页面也命中
+        active: pathname === `/projects/${projectId}`,
+      },
       {
         label: t("topbar.workspace"),
         href: `/projects/${projectId}/world-info`,

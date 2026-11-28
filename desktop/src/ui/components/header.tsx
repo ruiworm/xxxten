@@ -142,6 +142,14 @@ export function DesktopHeader({
           <span className="desktop-brand-mark" />
           <span className="desktop-brand-wordmark" />
         </div>
+        <button
+          className="titlebar-button"
+          aria-label={t("desktop.header.toggleSidebar")}
+          type="button"
+          onClick={onToggleSidebar}
+        >
+          <PanelLeft size={15} strokeWidth={2} />
+        </button>
         <nav className="desktop-navigation" aria-label={t("desktop.header.navigation")}>
           <button
             className="titlebar-button"
@@ -177,14 +185,6 @@ export function DesktopHeader({
       </div>
 
       <div className="desktop-titlebar-actions">
-        <button
-          className="titlebar-button"
-          aria-label={t("desktop.header.toggleSidebar")}
-          type="button"
-          onClick={onToggleSidebar}
-        >
-          <PanelLeft size={15} strokeWidth={2} />
-        </button>
         <button
           className="titlebar-button"
           aria-label={t("desktop.header.minimizeWindow")}

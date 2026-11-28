@@ -29,6 +29,15 @@
 .writing-page-sidebar--right {
   border-left: 1px solid var(--gray-a4);
   background: var(--theme-sidebar-background);
+  position: relative;
+}
+
+/* 悬浮在 AI 面板左上角的折叠按钮，不参与面板内容布局 */
+.assistant-panel-collapse-button {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
 }
 
 .writing-sidebar-segmented-control {
