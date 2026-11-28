@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { ChartNoAxesCombined, Globe, LibraryBig, UserRound, Workflow } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from "react-router";
 
@@ -11,12 +11,8 @@ import { toast } from "@/components";
 import { useMobileSidebarSwipe } from "@/hooks/use-mobile-sidebar-swipe";
 import { saveLanguagePreference, supportedLanguages, type LanguageCode } from "@/i18n";
 import { apiClient, fetchProject } from "@/lib/api-client";
-import {
-  getRecentProjects,
-  openRecentProject,
-  removeRecentProject,
-  removeRecentProjectByProjectId,
-} from "@/lib/local-db";
+import { publishDesktopDocumentTitle } from "@/lib/desktop-appearance-bridge";
+import { openRecentProject, removeRecentProjectByProjectId } from "@/lib/local-db";
 import type { RecentProject } from "@/lib/recent-projects";
 import type { ThemeMode } from "@/lib/theme";
 
@@ -26,9 +22,7 @@ import {
   SIDEBAR_EXPANDED_WIDTH,
   type AppSidebarNavItem,
 } from "./app-sidebar.constants";
-import { RecentProjectsNav } from "./recent-projects-nav";
 import { SidebarActions } from "./sidebar-actions";
-import { SidebarBrand } from "./sidebar-brand";
 import { SidebarNav } from "./sidebar-nav";
 
 const MotionBox = motion.create(Box);
@@ -59,9 +53,7 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
   });
 
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isLogoHovered, setIsLogoHovered] = useState(false);
   const [shouldAnimateTheme, setShouldAnimateTheme] = useState(false);
-  const logoPointerInsideRef = useRef(false);
   const prevAppearanceRef = useRef(appearance);
   const prevThemeModeRef = useRef(themeMode);
   const prevPathnameRef = useRef(location.pathname);
@@ -108,15 +100,14 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
     enabled: !!projectId,
   });
 
-  const { data: recentProjects = [] } = useQuery({
-    queryKey: ["recent-projects"],
-    queryFn: getRecentProjects,
-    staleTime: Infinity,
-  });
-
   useEffect(() => {
     if (!projectId) lastOpenedProjectIdRef.current = null;
   }, [projectId]);
+
+  // 标题栏由桌面壳绘制，这里把当前小说名同步过去；离开项目时置空，标题栏留白。
+  useEffect(() => {
+    publishDesktopDocumentTitle(currentProject?.title ?? "");
+  }, [currentProject?.title]);
 
   useEffect(() => {
     if (!projectId || !axios.isAxiosError(currentProjectError)) return;
@@ -230,44 +221,14 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
       return;
     }
 
-    logoPointerInsideRef.current = false;
-    setIsLogoHovered(false);
     setIsExpanded((prev) => !prev);
   }, [closeSidebar, isMobile]);
 
-  const handleLogoPointerEnter = useCallback(() => {
-    logoPointerInsideRef.current = true;
-    if (!isExpanded) {
-      setIsLogoHovered(true);
-    }
-  }, [isExpanded]);
-
-  const handleLogoPointerLeave = useCallback(() => {
-    logoPointerInsideRef.current = false;
-    setIsLogoHovered(false);
-  }, []);
-
-  const handleLogoPointerMove = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
-      if (!isExpanded && logoPointerInsideRef.current) {
-        const { left, right, top, bottom } = event.currentTarget.getBoundingClientRect();
-        const isInside =
-          event.clientX >= left &&
-          event.clientX <= right &&
-          event.clientY >= top &&
-          event.clientY <= bottom;
-
-        if (isInside && !isLogoHovered) {
-          setIsLogoHovered(true);
-        }
-      }
-    },
-    [isExpanded, isLogoHovered],
-  );
-
-  const navigateToProjects = useCallback(() => {
-    navigate("/");
-  }, [navigate]);
+  // 折叠按钮已移到桌面壳的标题栏，通过 preload 转发成页面事件。
+  useEffect(() => {
+    window.addEventListener("openfic:toggle-sidebar", toggleExpanded);
+    return () => window.removeEventListener("openfic:toggle-sidebar", toggleExpanded);
+  }, [toggleExpanded]);
 
   const handleOpenSettings = useCallback(() => {
     if (isMobile) {
@@ -275,18 +236,6 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
     }
     openSettings();
   }, [closeSidebar, isMobile, openSettings]);
-
-  const handleRemoveRecentProject = useCallback(
-    async (slot: number) => {
-      const isRemoved = await removeRecentProject(slot);
-      if (!isRemoved) return;
-
-      queryClient.setQueryData<RecentProject[]>(["recent-projects"], (projects = []) =>
-        projects.filter((project) => project.slot !== slot),
-      );
-    },
-    [queryClient],
-  );
 
   return (
     <>
@@ -341,50 +290,12 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
             height="100%"
             p="3"
           >
-            <SidebarBrand
-              isExpanded={isMobile || isExpanded}
-              isHovered={isLogoHovered}
-              expandLabel={t("topbar.expand")}
-              projectsLabel={t("topbar.projects")}
-              collapseLabel={t("topbar.collapse")}
-              onToggleExpanded={toggleExpanded}
-              onNavigateHome={navigateToProjects}
-              onPointerEnter={handleLogoPointerEnter}
-              onPointerLeave={handleLogoPointerLeave}
-              onPointerMove={handleLogoPointerMove}
-            />
-
-            <Box
-              style={{
-                width: "100%",
-                height: 13,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-start",
-                margin: "6px 0",
-                flexShrink: 0,
-              }}
-            >
-              <MotionBox
-                initial={false}
-                animate={{
-                  width: isMobile || isExpanded ? SIDEBAR_EXPANDED_WIDTH - 40 : 32,
-                  marginLeft: isMobile || isExpanded ? 8 : 4,
-                }}
-                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                style={{
-                  height: 1,
-                  background: "var(--gray-a5)",
-                }}
-              />
-            </Box>
-
+            {/* 品牌区在桌面壳标题栏；侧边栏首项仍是项目库入口 */}
             <SidebarNav
               items={primaryNavItems}
               isExpanded={isMobile || isExpanded}
             />
 
-            {/* 进入项目时把这两项「弹」出来，离开项目时收回 */}
             <AnimatePresence initial={false}>
               {projectNavItems.length > 0 ? (
                 <MotionBox
@@ -402,15 +313,6 @@ export function AppSidebar({ appearance, themeMode, onToggleTheme }: AppSidebarP
                 </MotionBox>
               ) : null}
             </AnimatePresence>
-
-            <RecentProjectsNav
-              projects={recentProjects}
-              currentProjectId={projectId}
-              isExpanded={isMobile || isExpanded}
-              ariaLabel={t("topbar.recentProjects")}
-              closeLabel={t("common.close")}
-              onRemove={handleRemoveRecentProject}
-            />
 
             <MotionFlex
               layout

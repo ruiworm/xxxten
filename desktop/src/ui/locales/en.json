@@ -19,6 +19,7 @@
     "navigation": "Page navigation",
     "goBack": "Go back",
     "goForward": "Go forward",
+    "toggleSidebar": "Toggle sidebar",
     "windowMenu": "Window (W)",
     "reload": "Reload",
     "minimize": "Minimize",

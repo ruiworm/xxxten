@@ -33,6 +33,18 @@ ipcRenderer.on("openfic:zoom-factor", (_event, zoomFactor: unknown) => {
   webFrame.setZoomFactor(clampZoomFactor(zoomFactor));
 });
 
+/**
+ * 壳层标题栏位于 webview 之外，无法直接调用前端路由或侧边栏状态。
+ * 这里把壳层的两个操作转发成页面内事件，由前端各自的 hook 接管。
+ */
+const SHELL_COMMANDS = ["openfic:navigate", "openfic:toggle-sidebar"] as const;
+
+for (const channel of SHELL_COMMANDS) {
+  ipcRenderer.on(channel, (_event, detail: unknown) => {
+    window.dispatchEvent(new CustomEvent(channel, { detail }));
+  });
+}
+
 window.addEventListener(
   "wheel",
   (event) => {
@@ -65,6 +77,9 @@ contextBridge.exposeInMainWorld("openficDesktopHost", {
   },
   publishLanguage: (language: unknown): void => {
     ipcRenderer.sendToHost("openfic:language", language);
+  },
+  publishDocumentTitle: (title: unknown): void => {
+    ipcRenderer.sendToHost("openfic:document-title", title);
   },
   publishSocketDiagnostic: (payload: unknown): void => {
     ipcRenderer.sendToHost("openfic:socket-diagnostic", payload);

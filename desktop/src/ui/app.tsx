@@ -202,9 +202,17 @@ export function App() {
   const [dataManagementPrevState, setDataManagementPrevState] = useState<ShellState | null>(null);
   const [dataManagementInstanceId, setDataManagementInstanceId] = useState<string | null>(null);
   const [startupProgress, setStartupProgress] = useState<StartupProgressEvent | null>(null);
+  /** 由前端上报的「正在写的小说」标题，标题栏居中显示。 */
+  const [documentTitle, setDocumentTitle] = useState("");
   const [frontendWebview, setFrontendWebview] = useState<FrontendWebviewElement | null>(null);
   const [webviewNavigation, setWebviewNavigation] = useState<WebviewNavigationState>(EMPTY_WEBVIEW_NAVIGATION);
   const startupRequestId = useRef(0);
+  /**
+   * 记录已经渲染过 webview 的实例。首次启动时后端仍在冷启动，壳层会先把
+   * webview 挂出来（前端自己轮询健康检查），因此后端就绪后不能再递增
+   * webviewKey —— 那会把已经渲染好的前端整页重载一次。
+   */
+  const preMountedInstanceIdRef = useRef<string | null>(null);
   const activeInstance = config?.instances.find((instance) => instance.id === activeInstanceId) ?? null;
   const deletionInstance = config?.instances.find((instance) => instance.id === deletionInstanceId) ?? null;
   const accessKeyInstance = config?.instances.find((instance) => instance.id === accessKeyInstanceId) ?? null;
@@ -229,6 +237,15 @@ export function App() {
           setConfig(initialConfig);
           setActiveInstanceId(initialActiveInstanceId);
           setShellAppearance(getShellAppearance(initialConfig, initialActiveInstanceId));
+          // 本地实例：先把 webview 挂起来，让前端静态资源与骨架立刻可见，
+          // 后端在后台继续导入模块、迁移数据库。前端自身带重试，能容忍
+          // 这段「地址已确定但服务尚未监听」的空窗期。
+          const initialInstance =
+            initialConfig?.instances.find((instance) => instance.id === initialActiveInstanceId) ?? null;
+          if (initialInstance?.mode === "local") {
+            preMountedInstanceIdRef.current = initialInstance.id;
+            setShellState("frontend");
+          }
         }
         const result = await window.openficDesktop.initializeApp();
         const nextConfig = await window.openficDesktop.getConfig();
@@ -310,6 +327,10 @@ export function App() {
       }
       if (channel === "openfic:language" && isDesktopLanguage(payload)) {
         void i18n.changeLanguage(payload);
+        return;
+      }
+      if (channel === "openfic:document-title") {
+        setDocumentTitle(typeof payload === "string" ? payload.slice(0, 200) : "");
         return;
       }
       if (channel === "openfic:socket-diagnostic" && isSocketDiagnosticPayload(payload)) {
@@ -414,8 +435,12 @@ export function App() {
     if (requestId !== undefined && requestId !== startupRequestId.current) return;
     setError(null);
     setCompatibilityWarning(result?.compatibilityWarning ?? null);
-    setWebviewKey((key) => key + 1);
-    setActiveInstanceId(nextConfig?.activeInstanceId ?? null);
+    const nextActiveInstanceId = nextConfig?.activeInstanceId ?? null;
+    if (preMountedInstanceIdRef.current !== nextActiveInstanceId) {
+      setWebviewKey((key) => key + 1);
+    }
+    preMountedInstanceIdRef.current = nextActiveInstanceId;
+    setActiveInstanceId(nextActiveInstanceId);
     setShellState("frontend");
   };
 
@@ -628,6 +653,11 @@ export function App() {
     }
   };
 
+  /** 标题栏折叠按钮：切换前端侧边栏的展开状态。 */
+  const handleToggleSidebar = () => {
+    frontendWebview?.send("openfic:toggle-sidebar", "toggle");
+  };
+
   useEffect(() => {
     if (shellState !== "frontend") return;
     let cancelled = false;
@@ -667,7 +697,33 @@ export function App() {
         canGoForward={shellState === "frontend" && webviewNavigation.canGoForward}
         onGoBack={() => handleWebviewNavigation("back")}
         onGoForward={() => handleWebviewNavigation("forward")}
+        documentTitle={documentTitle}
+        onToggleSidebar={handleToggleSidebar}
       />
+      {/*
+        预挂载后启动页不再可见，但首次安装或版本更新时后端获取/安装可能需要数分钟。
+        这里保留一条细进度条，让用户知道后台仍在推进，而不是界面卡死。
+      */}
+      {shellState === "frontend" && startupProgress?.status === "running" ? (
+        <div
+          className="startup-inline"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round((startupProgress.progress ?? 0) * 100)}
+        >
+          <div className="startup-inline-track">
+            <div
+              className="startup-inline-fill"
+              style={{ width: `${Math.max(4, Math.round((startupProgress.progress ?? 0) * 100))}%` }}
+            />
+          </div>
+          <span className="startup-inline-text">
+            {startupProgress.title}
+            {startupProgress.message ? ` · ${startupProgress.message}` : ""}
+          </span>
+        </div>
+      ) : null}
       <section className="desktop-content">
         {shellState === "booting" ? (
           <BootPage

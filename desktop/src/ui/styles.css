@@ -15,12 +15,13 @@ body {
   background: var(--color-background);
   color: var(--gray-12);
   overflow: hidden;
+  position: relative;
 }
 
 .desktop-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   height: 44px;
   padding: 0 10px 0 14px;
   box-sizing: border-box;
@@ -29,8 +30,98 @@ body {
   -webkit-app-region: drag;
 }
 
+/*
+ * 标题栏顺序：品牌 → 前进后退 → 项目 → 当前小说 → 折叠与窗口控制。
+ * 中间列用 auto 宽度并居中，左右各占一列等宽，保证小说名视觉居中。
+ */
+.desktop-titlebar-left {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-width: 0;
+  gap: 10px;
+  -webkit-app-region: no-drag;
+}
+
+.desktop-brand {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 7px;
+}
+
+.desktop-brand-mark {
+  width: 18px;
+  height: 18px;
+  background-color: var(--gray-12);
+  mask: url("/brand-mark.svg") center / contain no-repeat;
+  -webkit-mask: url("/brand-mark.svg") center / contain no-repeat;
+}
+
+.desktop-brand-wordmark {
+  width: 66px;
+  height: 18px;
+  background-color: var(--gray-12);
+  mask: url("/brand.svg") center / contain no-repeat;
+  -webkit-mask: url("/brand.svg") center / contain no-repeat;
+}
+
+.desktop-titlebar-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  min-width: 0;
+  padding: 0 12px;
+}
+
+.desktop-titlebar-title-text {
+  max-width: min(420px, 40vw);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--gray-11);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .desktop-content {
   min-height: 0;
+}
+
+/* 预挂载 webview 时用来替代整页启动页的细进度条，浮在内容之上、不参与栅格布局 */
+.startup-inline {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--color-background) 86%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.startup-inline-track {
+  height: 2px;
+  background: var(--gray-a3);
+  overflow: hidden;
+}
+
+.startup-inline-fill {
+  height: 100%;
+  background: var(--gray-11);
+  transition: width 240ms ease;
+}
+
+.startup-inline-text {
+  display: block;
+  padding: 5px 14px 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--gray-11);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .desktop-notices {
@@ -492,14 +583,6 @@ body {
   min-height: 0;
 }
 
-.desktop-titlebar-left {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  gap: 10px;
-  -webkit-app-region: no-drag;
-}
-
 .desktop-navigation {
   display: inline-flex;
   align-items: center;
@@ -674,6 +757,7 @@ body {
 .desktop-titlebar-actions {
   display: inline-flex;
   align-items: center;
+  justify-self: end;
   gap: 6px;
   -webkit-app-region: no-drag;
 }

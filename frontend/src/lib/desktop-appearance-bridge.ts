@@ -31,6 +31,7 @@ declare global {
     openficDesktopHost?: {
       publishAppearance: (payload: DesktopAppearancePayload) => void;
       publishLanguage: (language: LanguageCode) => void;
+      publishDocumentTitle: (title: string) => void;
       publishSocketDiagnostic: (payload: SocketDiagnosticPayload) => void;
       openFolder: (folderPath: string) => void;
       openOpenAICodexAuthorization: (url: string) => Promise<void>;
@@ -44,6 +45,14 @@ export function publishDesktopAppearance(payload: DesktopAppearancePayload): voi
 
 export function publishDesktopLanguage(language: LanguageCode): void {
   window.openficDesktopHost?.publishLanguage(language);
+}
+
+/**
+ * 把当前打开的小说标题上报给桌面壳的标题栏。
+ * 没有打开项目时传空串，标题栏会留空。
+ */
+export function publishDesktopDocumentTitle(title: string): void {
+  window.openficDesktopHost?.publishDocumentTitle?.(title);
 }
 
 export function publishSocketDiagnostic(payload: SocketDiagnosticPayload): void {

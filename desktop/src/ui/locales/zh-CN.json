@@ -19,6 +19,7 @@
     "navigation": "页面导航",
     "goBack": "后退",
     "goForward": "前进",
+    "toggleSidebar": "折叠/展开侧边栏",
     "windowMenu": "窗口(W)",
     "reload": "重载",
     "minimize": "最小化",
