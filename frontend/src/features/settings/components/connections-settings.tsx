@@ -16,6 +16,7 @@ import {
   ChevronRight,
   ChevronDown,
   Info,
+  Download,
 } from "lucide-react";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -24,12 +25,13 @@ import { InfoTooltip, LabeledSelect, Spinner } from "@/components";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/toast";
 import { getApiBaseUrl } from "@/lib/api-client";
-import type { ModelProvider } from "@/lib/model.types";
+import type { Model, ModelProvider } from "@/lib/model.types";
 import "@/lib/desktop-appearance-bridge";
 
 import {
   fetchProviders,
   fetchModelProviderCatalogProviders,
+  fetchModels,
   createProvider,
   updateProvider,
   deleteProvider,
@@ -42,6 +44,7 @@ import {
   type OpenAICodexRegistration,
   type OpenAICodexAuthorizationStatus,
 } from "../lib/model-api";
+import { ModelImportDialog } from "./model-import-dialog";
 import { ProviderIcon } from "../lib/provider-icons";
 import {
   getProviderDisplayName,
@@ -359,6 +362,16 @@ export function ConnectionsSettings({
   const { data: catalogProviders, isLoading: isCatalogProvidersLoading } = useQuery({
     queryKey: ["model-provider-catalog", "providers"],
     queryFn: fetchModelProviderCatalogProviders,
+  });
+
+  const [importConnection, setImportConnection] = useState<ModelProvider | null>(null);
+
+  // 导入弹窗需要知道哪些模型已经存在，打开时才拉
+  const { data: modelsForImport = [] } = useQuery<Model[]>({
+    queryKey: ["models", "for-import"],
+    queryFn: () => fetchModels(),
+    enabled: Boolean(importConnection),
+    staleTime: 0,
   });
 
   // 创建连接
@@ -711,6 +724,17 @@ export function ConnectionsSettings({
                     gap="2"
                     className="connections-settings__item-actions"
                   >
+                    <Tooltip content={t("models.importModels")}>
+                      <IconButton
+                        variant="ghost"
+                        color="gray"
+                        onClick={() => setImportConnection(connection)}
+                        disabled={isAgentSettingsLocked}
+                        aria-label={t("models.importModels")}
+                      >
+                        <Download size={16} />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip content={t("connections.editConnection")}>
                       <IconButton
                         variant="ghost"
@@ -765,6 +789,17 @@ export function ConnectionsSettings({
           </Flex>
         )}
       </Flex>
+
+      {/* 从内置目录批量导入该连接下的模型 */}
+      <ModelImportDialog
+        open={Boolean(importConnection)}
+        onOpenChange={(next) => {
+          if (!next) setImportConnection(null);
+        }}
+        connection={importConnection}
+        models={modelsForImport}
+        isAgentSettingsLocked={isAgentSettingsLocked}
+      />
 
       {/* 表单对话框 */}
       <ConnectionFormDialog
