@@ -29,6 +29,8 @@ import { useWritingStore } from "../store/use-writing-store";
 
 const PANEL_LAYOUT_KEY = "panel-layout.writing";
 const PANEL_IDS = ["left-sidebar", "editor", "right-sidebar"];
+/** AI 面板折叠后再展开时，若没有记录过宽度就用这个默认值 */
+const DEFAULT_ASSISTANT_PANEL_SIZE = 500;
 const SummaryPanel = lazy(() =>
   import("../components/summary-panel").then((module) => ({ default: module.SummaryPanel })),
 );
@@ -96,26 +98,32 @@ export function WritingPage() {
   });
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const assistantPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const assistantRestoreSizeRef = useRef(DEFAULT_ASSISTANT_PANEL_SIZE);
   const [isAssistantPanelCollapsed, setIsAssistantPanelCollapsed] = useState(false);
 
   /**
-   * AI 面板折叠。react-resizable-panels v4 没有 onCollapse 回调，状态需要自己维护：
-   * 点击时按「意图」直接置位，避免被随后的 onResize 用旧尺寸覆盖；
-   * 用户拖拽到阈值触发的自动折叠由 onResize 在下一帧补同步。
+   * AI 面板折叠。v4 的 collapse() 在本项目里实测没有真正改变布局
+   * （内部 div 宽度归零但 Group 未重排，编辑器也不变宽），
+   * 因此直接用 resize() 控制尺寸，并记住折叠前的宽度用于恢复。
    */
   const toggleAssistantPanel = useCallback(() => {
     const panel = assistantPanelRef.current;
     if (!panel) return;
-    const nextCollapsed = !panel.isCollapsed();
-    if (nextCollapsed) panel.collapse();
-    else panel.expand();
-    setIsAssistantPanelCollapsed(nextCollapsed);
+    const currentSize = panel.getSize().inPixels;
+    if (currentSize <= 1) {
+      panel.resize(assistantRestoreSizeRef.current || DEFAULT_ASSISTANT_PANEL_SIZE);
+      setIsAssistantPanelCollapsed(false);
+      return;
+    }
+    assistantRestoreSizeRef.current = currentSize;
+    panel.resize(0);
+    setIsAssistantPanelCollapsed(true);
   }, []);
 
   const handleAssistantPanelResize = useCallback(() => {
     const panel = assistantPanelRef.current;
     if (!panel) return;
-    // collapse() 触发的 resize 回调里尺寸可能尚未落地，推到下一帧再读。
+    // resize 触发的回调里尺寸可能尚未落地，推到下一帧再读。
     requestAnimationFrame(() => {
       setIsAssistantPanelCollapsed(panel.getSize().inPixels <= 1);
     });
