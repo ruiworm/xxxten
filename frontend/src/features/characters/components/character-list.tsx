@@ -629,21 +629,29 @@ export function CharacterList({
                   view === "editor" ? "characters.graph.graphView" : "characters.graph.editorView",
                 )}
               >
-                <IconButton
+                {/* 与「新建角色」等宽：两个按钮共用 flex:1 的样式，各占一半 */}
+                <Button
                   size="2"
                   variant={view === "graph" ? "soft" : "ghost"}
                   color={view === "graph" ? undefined : "gray"}
                   highContrast={view !== "graph"}
                   onClick={onToggleView}
-                  aria-label={t(
-                    view === "editor"
-                      ? "characters.graph.graphView"
-                      : "characters.graph.editorView",
-                  )}
                   aria-pressed={view === "graph"}
+                  className="characters-list-create-button"
                 >
                   {view === "editor" ? <GitFork size={16} /> : <BookOpen size={16} />}
-                </IconButton>
+                  <Text
+                    size="2"
+                    ml="1"
+                    truncate
+                  >
+                    {t(
+                      view === "editor"
+                        ? "characters.graph.graphView"
+                        : "characters.graph.editorView",
+                    )}
+                  </Text>
+                </Button>
               </Tooltip>
             </Flex>
           </Flex>

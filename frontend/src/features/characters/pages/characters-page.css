@@ -146,9 +146,21 @@
   max-width: 100%;
 }
 
+/*
+ * 「新建角色」与「关系图谱」并排各占一半。
+ *
+ * Radix 的 ghost 变体会切到 box-sizing: content-box + height: fit-content，
+ * 与 soft 变体的 border-box + 固定高度不一致，直接用 flex 等分会被内容宽度带偏
+ * （实测 8px 偏差，且两个按钮高度不同）。这里统一盒模型、宽度与内边距后，
+ * flex 的 1 1 0 才能稳定对半分。
+ */
 .characters-list .characters-list-create-button {
-  flex: 1;
+  flex: 1 1 0;
+  width: 0;
   min-width: 0;
+  box-sizing: border-box;
+  height: var(--base-button-height, 32px);
+  padding: 0 12px;
 }
 
 .characters-relationship-badge {
